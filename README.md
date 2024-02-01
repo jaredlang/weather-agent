@@ -9,4 +9,4 @@
 3. The temperature is always in Celsius. It should be in a local measure unit
 4. Need to get other weather data besides the temperature
 5. There is no image to show the weather data
-
+6. Add the error handling in the tools
