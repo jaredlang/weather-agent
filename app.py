@@ -1,7 +1,10 @@
 import math
+import json 
+from langchain_core.prompts import ChatPromptTemplate, MessagesPlaceholder
+from langchain_core.runnables import RunnablePassthrough
+from langchain.schema import StrOutputParser
 from langchain_openai import ChatOpenAI
 from langchain.agents import tool 
-from langchain_core.prompts import ChatPromptTemplate, MessagesPlaceholder
 from langchain.agents.format_scratchpad.openai_tools import (
     format_to_openai_tool_messages
 )
@@ -9,6 +12,8 @@ from langchain.agents.output_parsers.openai_tools import (
     OpenAIToolsAgentOutputParser
 )
 from langchain.agents import AgentExecutor
+
+from TTS.api import TTS
 
 import os
 from dotenv import load_dotenv
@@ -58,6 +63,8 @@ def get_current_temperature(city: str) -> int:
         response.raise_for_status()  # Raise an exception for error status codes
 
         data = response.json()
+        print("WEATHER DATA: ", json.dumps(data))
+
         temperature_kelvin = data["main"]["temp"]
         return math.floor(temperature_kelvin)
 
@@ -65,7 +72,52 @@ def get_current_temperature(city: str) -> int:
         print("Error:", e)
         return None
 
-tools = [get_current_temperature, celsius_to_fahrenheit]
+
+@tool 
+def get_weather_report(city: str) -> str: 
+    """Retrieves the current weather report for a given city using the OpenWeatherMap API.
+
+    Args:
+        city (str): The name of the city to get the temperature for.
+
+    Returns:
+        float: The current weather report. Returns None if an error occurs.
+    """
+
+    base_url = "https://api.openweathermap.org/data/2.5/weather"
+    params = {"q": city, "appid": OPENWEATHER_API_KEY, "units": "metric"}  # Use metric for Celsius
+
+    try:
+        response = requests.get(base_url, params=params)
+        response.raise_for_status()  # Raise an exception for error status codes
+
+        data = response.json()
+        print("WEATHER DATA: ", json.dumps(data))
+
+        weather_main_array = ". ".join([x['main'] for x in data['weather']])
+        weather_description_array = ". ".join([x['description'] for x in data['weather']])
+
+        report = (
+            f"Weather at this hour is {weather_main_array} {weather_description_array}", 
+            f"Current temperature is {math.ceil(data['main']['temp'])}. It could feel like {math.ceil(data['main']['feels_like'])} because of humidity",
+            f"Humidity is {data['main']['humidity']} percent. ",
+            "It is very humid." if data['main']['humidity'] > 75 else "It is a dry day." if data['main']['humidity'] < 25 else "It feels pretty comfortable. ",
+            f"Today's temperature can go as high as {math.ceil(data['main']['temp_max'])} degrees. At night the temperature can drop to {math.floor(data['main']['temp_min'])} degrees. ",
+            f"The rain amount is {data['rain']['1h']} in the unit of inch. " if 'rain' in data.keys() else "", 
+            "Strong Wind." if data['wind']['speed'] > 10 else "The wind is calm." 
+            # json_data["wind"]["deg"]
+        )
+
+        return report
+
+    except requests.exceptions.RequestException as e:
+        print("Error:", e)
+        return None
+
+
+#tools = [get_current_temperature, celsius_to_fahrenheit]
+
+tools = [get_weather_report]
 
 # Define a prompt template
 prompt = ChatPromptTemplate.from_messages([
@@ -96,6 +148,22 @@ agent = (
 
 agent_executor = AgentExecutor(agent=agent, tools=tools, verbose=True)
 
+# txt2speech (The best speech)
+def txt2speech(text): 
+
+    tts = TTS("tts_models/multilingual/multi-dataset/xtts_v2", gpu=False)
+
+    ts = time.time()
+    file_path = f"{OUTPUT_FOLDER}/story_Coqui-{ts}.wav"
+    
+    # generate speech by cloning a voice using default settings
+    tts.tts_to_file(text=text,
+                    file_path=file_path,
+                    speaker_wav=r"./voice_samples/samples_en_sample.wav",
+                    language="en")
+
+    return file_path
+
 
 def txt2speech_Saas(text): 
     #API_URL = "https://api-inference.huggingface.co/models/microsoft/speecht5_tts" # Internal Server Error
@@ -125,7 +193,7 @@ def create_announcement(place):
 
     print("ANSWER: ", answer)
 
-    audio_file_path = txt2speech_Saas(answer["output"])
+    audio_file_path = txt2speech(answer["output"])
     print("AUDIO: ", audio_file_path)
 
     return {
@@ -138,12 +206,28 @@ def test():
     #answer = agent_executor.invoke({"input": "what's the current temperature in London?"})
     #answer = agent_executor.invoke({"input": "what's the current temperature in London? Use Fahrenheit instead Celsius. "})
 
-    answer = agent_executor.invoke({"input": "what's the current temperature in Houston?"})
+    # answer = agent_executor.invoke({"input": "what's the weather like in Houston?"})
     #answer = agent_executor.invoke({"input": "what's the current temperature in Houston? Use Fahrenheit. "})
+
+    # answer = agent_executor.invoke({"input": "what's the weather like in Atlanta?"})
+    # answer = agent_executor.invoke({"input": "what's the weather like in Chicago?"})
+    answer = agent_executor.invoke({"input": "what's the weather like in Orlando?"})
 
     print("ANSWER: ", answer)
 
-    audio_file_path = txt2speech_Saas(answer["output"])
+    prompt = ChatPromptTemplate.from_template(""" You are an experienced weather reporter in WHBC network. 
+                                              Give a vivid and detailed description in a casual tone based on the following weather report: 
+                                              WEATHER REPORT:  {weather_report} """)
+
+    chain = {"weather_report": RunnablePassthrough()} | prompt | ChatOpenAI() | StrOutputParser()
+
+    description = chain.invoke(answer)
+
+    print("DESCRIPTIION: ", description)
+
+    description_excerpt = "\n\n".join(description.split("\n\n")[:3])
+
+    audio_file_path = txt2speech(description_excerpt)
     print("AUDIO: ", audio_file_path)
 
 
@@ -176,5 +260,5 @@ def app():
 
 
 if __name__ == "__main__": 
-    # test()
-    app()
+    test()
+    # app()
