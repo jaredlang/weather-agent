@@ -87,7 +87,7 @@ def get_weather_summary(city: str) -> str:
         city (str): The name of the city to get a brief weather report for.
 
     Returns:
-        str: The current weather report. Returns None if an error occurs.
+        str: The weather summary. Returns None if an error occurs.
     """
 
     base_url = "https://api.openweathermap.org/data/2.5/weather"
@@ -118,14 +118,14 @@ def get_weather_summary(city: str) -> str:
   
 
 @tool 
-def get_weather_report(city: str) -> str: 
+def get_weather_detail(city: str) -> str: 
     """Retrieves the detailed weather report for a given city using the OpenWeatherMap API.
 
     Args:
-        city (str): The name of the city to get the temperature for.
+        city (str): The name of the city to get a detailed weather report for.
 
     Returns:
-        str: The detailed weather report. Returns None if an error occurs.
+        str: The weather detail. Returns None if an error occurs.
     """
 
     base_url = "https://api.openweathermap.org/data/2.5/weather"
