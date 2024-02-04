@@ -154,7 +154,7 @@ def get_weather_report(city: str) -> str:
             f"Today's temperature can go as high as {math.ceil(data['main']['temp_max'])} degrees. At night the temperature can drop to {math.floor(data['main']['temp_min'])} degrees. ",
             f"The rain amount is {data['rain']['1h']} in the unit of inch. " if 'rain' in data.keys() else "", 
             "Strong Wind." if data['wind']['speed'] > 10 else "The wind is calm.",
-            "Visibility is poor" if data["visibility"] < 2500 else "Visibility is poor"
+            "Visibility is poor" if data["visibility"] < 2500 else ""
             # json_data["wind"]["deg"]
         )
 
@@ -310,11 +310,10 @@ def test(place):
 
     description = chain2.invoke(report)
     print("DESCRIPTIION: ", description)
-
     #description_excerpt = "\n\n".join(description.split("\n\n")[:3])
 
-    #audio_file_path = txt2speech(description)
-    #print("AUDIO: ", audio_file_path)
+    audio_file_path = txt2speech(description)
+    print("AUDIO: ", audio_file_path)
 
     # create an image
     prompt1 = ChatPromptTemplate.from_template(
@@ -322,7 +321,7 @@ def test(place):
     )
     #chain1 = {"place": RunnablePassthrough()} | prompt1 | llm_with_tools | StrOutputParser()
 
-    summary = agent_executor.invoke({"input": f"Get a weather summary for the city {place}. It must be less than 10 words. "})
+    summary = agent_executor.invoke({"input": f"Get a weather summary for the city {place}. It must be less than 15 words. Do NOT repeat any word in the input."})
     print("SUMMARY:", summary)
 
     image_file_path = text2image(summary["output"])
@@ -358,6 +357,6 @@ def app():
 
 
 if __name__ == "__main__": 
-    # Atlanta, Orlando, Houston, Boston
-    test("Houston")
+    # Atlanta, Orlando, Houston, New York
+    test("New York")
     # app()
