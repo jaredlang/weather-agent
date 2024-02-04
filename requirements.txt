@@ -1,6 +1,7 @@
 python-dotenv 
 langchain 
 langchain-openai 
+coqui
 TTS
 diffusers[torch]
 transformers
