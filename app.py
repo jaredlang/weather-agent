@@ -15,6 +15,10 @@ from langchain.agents import AgentExecutor
 
 from TTS.api import TTS
 
+from diffusers import DiffusionPipeline
+import io
+from PIL import Image
+
 import os
 from dotenv import load_dotenv
 import requests
@@ -27,6 +31,8 @@ OPENWEATHER_API_KEY = os.environ["OPENWEATHER_API_KEY"]
 HUGGINGFACE_API_KEY = os.environ["HUGGINGFACE_API_KEY"]
 
 OUTPUT_FOLDER = "./output"
+
+OPENAI_MODEL = "gpt-3.5-turbo"
 
 # Define a function as a tool with decorator 
 @tool
@@ -46,13 +52,13 @@ def celsius_to_fahrenheit(celsius) -> float:
 
 @tool 
 def get_current_temperature(city: str) -> int:
-    """Retrieves the current temperature for a given city using the OpenWeatherMap API.
+    """Retrieves the current temperature in a given city using the OpenWeatherMap API.
 
     Args:
         city (str): The name of the city to get the temperature for.
 
     Returns:
-        float: The current temperature in degrees Celsius. Returns None if an error occurs.
+        int: The current temperature in degrees Celsius. Returns None if an error occurs.
     """
 
     base_url = "https://api.openweathermap.org/data/2.5/weather"
@@ -74,18 +80,61 @@ def get_current_temperature(city: str) -> int:
 
 
 @tool 
+def get_weather_summary(city: str) -> str: 
+    """Retrieves a brief summary of the current weather in a given city using the OpenWeatherMap API.
+
+    Args:
+        city (str): The name of the city to get a brief weather report for.
+
+    Returns:
+        str: The current weather report. Returns None if an error occurs.
+    """
+
+    base_url = "https://api.openweathermap.org/data/2.5/weather"
+    params = {
+        "q": city, 
+        "appid": OPENWEATHER_API_KEY, 
+        # "units": "metric" # Use metric for Celsius
+        "units": "imperial" # Use imperial for fahrenheit
+    }  
+
+    try:
+        response = requests.get(base_url, params=params)
+        response.raise_for_status()  # Raise an exception for error status codes
+
+        data = response.json()
+        print("WEATHER DATA: ", json.dumps(data))
+
+        weather_main_array = ". ".join([x['main'] for x in data['weather']])
+        weather_description_array = ". ".join([x['description'] for x in data['weather']])
+
+        summary = f"Weather is {weather_main_array}. {weather_description_array}"
+
+        return summary 
+
+    except requests.exceptions.RequestException as e:
+        print("Error:", e)
+        return None
+  
+
+@tool 
 def get_weather_report(city: str) -> str: 
-    """Retrieves the current weather report for a given city using the OpenWeatherMap API.
+    """Retrieves the detailed weather report for a given city using the OpenWeatherMap API.
 
     Args:
         city (str): The name of the city to get the temperature for.
 
     Returns:
-        float: The current weather report. Returns None if an error occurs.
+        str: The detailed weather report. Returns None if an error occurs.
     """
 
     base_url = "https://api.openweathermap.org/data/2.5/weather"
-    params = {"q": city, "appid": OPENWEATHER_API_KEY, "units": "metric"}  # Use metric for Celsius
+    params = {
+        "q": city, 
+        "appid": OPENWEATHER_API_KEY, 
+        # "units": "metric" # Use metric for Celsius
+        "units": "imperial" # Use imperial for fahrenheit
+    }  
 
     try:
         response = requests.get(base_url, params=params)
@@ -104,11 +153,12 @@ def get_weather_report(city: str) -> str:
             "It is very humid." if data['main']['humidity'] > 75 else "It is a dry day." if data['main']['humidity'] < 25 else "It feels pretty comfortable. ",
             f"Today's temperature can go as high as {math.ceil(data['main']['temp_max'])} degrees. At night the temperature can drop to {math.floor(data['main']['temp_min'])} degrees. ",
             f"The rain amount is {data['rain']['1h']} in the unit of inch. " if 'rain' in data.keys() else "", 
-            "Strong Wind." if data['wind']['speed'] > 10 else "The wind is calm." 
+            "Strong Wind." if data['wind']['speed'] > 10 else "The wind is calm.",
+            "Visibility is poor" if data["visibility"] < 2500 else "Visibility is poor"
             # json_data["wind"]["deg"]
         )
 
-        return report
+        return report 
 
     except requests.exceptions.RequestException as e:
         print("Error:", e)
@@ -116,8 +166,7 @@ def get_weather_report(city: str) -> str:
 
 
 #tools = [get_current_temperature, celsius_to_fahrenheit]
-
-tools = [get_weather_report]
+tools = [get_current_temperature, get_weather_report, get_weather_summary]
 
 # Define a prompt template
 prompt = ChatPromptTemplate.from_messages([
@@ -127,7 +176,7 @@ prompt = ChatPromptTemplate.from_messages([
 ])
 
 # Define a factual LLM 
-llm = ChatOpenAI(model="gpt-3.5-turbo", temperature=0)
+llm = ChatOpenAI(model=OPENAI_MODEL, temperature=0)
 
 # Bind LLM with tools
 llm_with_tools = llm.bind_tools(tools)
@@ -202,33 +251,82 @@ def create_announcement(place):
     }
 
 
-def test():
+def generate_image_df(image_description: str): 
+    pipeline = DiffusionPipeline.from_pretrained("stabilityai/stable-diffusion-2-1")
+    result = pipeline(image_description, num_inference_steps=50)
+    image = result.images[0]
+
+    return image
+
+
+def generate_image_hf(image_description: str): 
+    # Huggingface model: 
+    # API_URL = "https://api-inference.huggingface.co/models/stabilityai/stable-diffusion-xl-base-1.0"
+    API_URL = "https://api-inference.huggingface.co/models/stabilityai/stable-diffusion-2-1"
+    headers = {"Authorization": F"Bearer {HUGGINGFACE_API_KEY}"}
+    
+    response = requests.post(API_URL, headers=headers, json={
+        "inputs": image_description + ". Make the image more cartoonish.",
+    })
+
+    if response.ok: 
+        image_bytes = response.content
+        # You can access the image with PIL.Image for example
+        image = Image.open(io.BytesIO(image_bytes))
+        return image
+    
+    else:
+        raise Exception(response.content)
+
+
+def text2image(text): 
+
+    ts = time.time()
+    image_format = "png"
+    image_file_path = f"{OUTPUT_FOLDER}/image-{ts}.{image_format}"
+
+    image = generate_image_df(text)
+    
+    image.save(image_file_path, format=image_format)
+    
+    return image_file_path
+
+
+def test(place):
+
     #answer = agent_executor.invoke({"input": "what's the current temperature in London?"})
     #answer = agent_executor.invoke({"input": "what's the current temperature in London? Use Fahrenheit instead Celsius. "})
-
-    # answer = agent_executor.invoke({"input": "what's the weather like in Houston?"})
     #answer = agent_executor.invoke({"input": "what's the current temperature in Houston? Use Fahrenheit. "})
+    report = agent_executor.invoke({"input": f"Get a detailed weather report for the city {place}?"})
+    print("REPORT: ", report)
 
-    # answer = agent_executor.invoke({"input": "what's the weather like in Atlanta?"})
-    # answer = agent_executor.invoke({"input": "what's the weather like in Chicago?"})
-    answer = agent_executor.invoke({"input": "what's the weather like in Orlando?"})
+    prompt2 = ChatPromptTemplate.from_template(
+        """ You are an experienced weather reporter in WHBC network. 
+            Give a vivid and detailed description in a casual tone based on the following weather report: 
+            WEATHER REPORT:  {weather_report} 
+        """)
 
-    print("ANSWER: ", answer)
+    chain2 = {"weather_report": RunnablePassthrough()} | prompt2 | llm | StrOutputParser()
 
-    prompt = ChatPromptTemplate.from_template(""" You are an experienced weather reporter in WHBC network. 
-                                              Give a vivid and detailed description in a casual tone based on the following weather report: 
-                                              WEATHER REPORT:  {weather_report} """)
-
-    chain = {"weather_report": RunnablePassthrough()} | prompt | ChatOpenAI() | StrOutputParser()
-
-    description = chain.invoke(answer)
-
+    description = chain2.invoke(report)
     print("DESCRIPTIION: ", description)
 
-    description_excerpt = "\n\n".join(description.split("\n\n")[:3])
+    #description_excerpt = "\n\n".join(description.split("\n\n")[:3])
 
-    audio_file_path = txt2speech(description_excerpt)
-    print("AUDIO: ", audio_file_path)
+    #audio_file_path = txt2speech(description)
+    #print("AUDIO: ", audio_file_path)
+
+    # create an image
+    prompt1 = ChatPromptTemplate.from_template(
+        f"Get a brief summary of weather report for the city {place}."
+    )
+    #chain1 = {"place": RunnablePassthrough()} | prompt1 | llm_with_tools | StrOutputParser()
+
+    summary = agent_executor.invoke({"input": f"Get a weather summary for the city {place}. It must be less than 10 words. "})
+    print("SUMMARY:", summary)
+
+    image_file_path = text2image(summary["output"])
+    print("IMAGE: ", image_file_path)    
 
 
 def app(): 
@@ -260,5 +358,6 @@ def app():
 
 
 if __name__ == "__main__": 
-    test()
+    # Atlanta, Orlando, Houston, Boston
+    test("Houston")
     # app()

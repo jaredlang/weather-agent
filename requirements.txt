@@ -2,5 +2,7 @@ python-dotenv
 langchain 
 langchain-openai 
 TTS
+diffusers[torch]
+transformers
 requests 
 streamlit 
