@@ -166,7 +166,7 @@ def get_weather_detail(city: str) -> str:
 
 
 #tools = [get_current_temperature, celsius_to_fahrenheit]
-tools = [get_current_temperature, get_weather_report, get_weather_summary]
+tools = [get_current_temperature, get_weather_detail, get_weather_summary]
 
 # Define a prompt template
 prompt = ChatPromptTemplate.from_messages([
