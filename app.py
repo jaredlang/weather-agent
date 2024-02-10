@@ -341,7 +341,7 @@ def test(place):
     chain2 = {"weather_report": RunnablePassthrough()} | prompt2 | llm | StrOutputParser()
 
     description = chain2.invoke(report)
-    print("DESCRIPTIION: ", description)
+    print("DESCRIPTIION for audio: ", description)
     #description_excerpt = "\n\n".join(description.split("\n\n")[:3])
 
     audio_file_path = txt2speech(description)
@@ -355,7 +355,7 @@ def test(place):
     #chain1 = {"place": RunnablePassthrough()} | prompt1 | llm_with_tools | StrOutputParser()
 
     summary = agent_executor.invoke({"input": f"Get a weather summary for the city {place}. It must be less than 15 words. Do NOT repeat any word in the input."})
-    print("SUMMARY:", summary)
+    print("SUMMARY for image:", summary)
 
     image_file_path = text2image(summary["output"])
     print("IMAGE: ", image_file_path)    
@@ -391,5 +391,5 @@ def app():
 
 if __name__ == "__main__": 
     # Atlanta, Orlando, Houston, New York, Calgary, Stockholm
-    test("Houston")
+    test("Calgary")
     # app()

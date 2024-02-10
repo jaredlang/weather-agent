@@ -37,9 +37,8 @@
 
 8. Set up an async running model for web ui 
     * Start a process and notify the user when it is generated 
+    * Store the historical inputs and outputs for the future reference
 
 9. Add the review steps to the creation process
     * Allow human to review the output of each step 
-    * Use AI agents 
-
-10. Save the historical inputs and outputs 
+    * Use AI agents
