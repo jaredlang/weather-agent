@@ -77,10 +77,10 @@ def get_raw_weather_data(city: str, units: str = "metric") -> str:
         structured_data = {
           "overview":  ". ".join([x['main'] for x in data['weather']]), 
           "description": ". ".join([x['description'] for x in data['weather']]), 
-          "temp": data["main"]["temp"], 
-          "feels_like": data['main']['feels_like'], 
-          "temp_max": data['main']['temp_max'], 
-          "temp_min": data['main']['temp_min'], 
+          "temp": math.ceil(data["main"]["temp"]), 
+          "feels_like": math.ceil(data['main']['feels_like']), 
+          "temp_max": math.ceil(data['main']['temp_max']), 
+          "temp_min": math.ceil(data['main']['temp_min']), 
           "humidity": data['main']['humidity'], 
           "visibility": data["visibility"], 
           "wind_speed": data['wind']['speed'], 
@@ -238,7 +238,7 @@ def txt2speech_Saas(text):
 
 def create_announcement(place): 
 
-    input = f"what's the current temperature in {place}? Always use the local unit of measurement."
+    input = f"what's the current temperature in {place}?"
     answer = agent_executor.invoke({"input": input})
 
     print("ANSWER: ", answer)
@@ -301,10 +301,17 @@ def test(place):
     report = agent_executor.invoke({"input": f"Get a detailed weather report for the city {place}?"})
     print("REPORT: ", report)
 
+    #!!! Use prompt to make sure the announcement doesn't miss negative before temperature. 
+    #    Otherwise, TTS just says the numeric value and ignore negative. 
+    # Too many instructions in the prompt makes LLM unpredictable. Somtimes it ignores some of them. 
+    #   If a temperature is negative, include NEGATIVE before the temperature numeric value. 
+    #   Do NOT say Celsius or Fahrenheit after temperature.
     prompt2 = ChatPromptTemplate.from_template(
         """ You are an experienced weather reporter and give daily weather updates on WHBC network. 
-            Give a vivid and detailed description in a casual tone based on the following weather report: 
-            WEATHER REPORT:  {weather_report} 
+            Give a vivid and detailed description in a casual tone based on the following weather report. 
+            If a temperature is negative, say NEGATIVE before the temperature numeric value. 
+            WEATHER REPORT:  
+            {weather_report} 
         """)
 
     chain2 = {"weather_report": RunnablePassthrough()} | prompt2 | llm | StrOutputParser()
