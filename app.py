@@ -75,16 +75,18 @@ def get_raw_weather_data(city: str, units: str = "metric") -> str:
         print("WEATHER DATA: ", json.dumps(data))
 
         structured_data = {
-          "overview":  ". ".join([x['main'] for x in data['weather']]), 
-          "description": ". ".join([x['description'] for x in data['weather']]), 
-          "temp": math.ceil(data["main"]["temp"]), 
-          "feels_like": math.ceil(data['main']['feels_like']), 
-          "temp_max": math.ceil(data['main']['temp_max']), 
-          "temp_min": math.ceil(data['main']['temp_min']), 
-          "humidity": data['main']['humidity'], 
-          "visibility": data["visibility"], 
-          "wind_speed": data['wind']['speed'], 
-          # data["wind"]["deg"]
+            "city": city, 
+            "country_code": data['sys']['country'], 
+            "overview":  ". ".join([x['main'] for x in data['weather']]), 
+            "description": ". ".join([x['description'] for x in data['weather']]), 
+            "temp": data["main"]["temp"], 
+            "feels_like": data['main']['feels_like'], 
+            "temp_max": data['main']['temp_max'], 
+            "temp_min": data['main']['temp_min'], 
+            "humidity": data['main']['humidity'], 
+            "visibility": data["visibility"], 
+            "wind_speed": data['wind']['speed'], 
+            # data["wind"]["deg"]
         }
 
         if 'rain' in data.keys(): 
@@ -130,7 +132,7 @@ def get_weather_summary(city: str, units: str) -> str:
     data = get_raw_weather_data(city, units)
 
     # format the response
-    summary = f"Weather is {data['overview']}. {data['description']}"
+    summary = f"Weather is {data['overview']}, {data['description']}."
 
     return summary 
 
@@ -149,15 +151,37 @@ def get_weather_detail(city: str, units: str) -> str:
 
     data = get_raw_weather_data(city, units)
 
+    # After adding the units parameter to the get_raw_weather_data tool, 
+    # LLM knows what unit of measure depending on the city location. 
+    # SMART! 
+    # 
+    # Just specify the unit of measure 
+    uom = "fahrenheit" if units == "imperial" else "celsius" 
+    # - No need for a manual conversion. 
+    # For United State, Liberia, Myanmar, convert the temp to fahrenheit
+    # uom = "celsius" # by default
+    # if units == "imperial": 
+    #     uom = "fahrenheit"
+    #     data['temp'] = celsius_to_fahrenheit(data['temp'])
+    #     data['feels_like'] = celsius_to_fahrenheit(data['feels_like'])
+    #     data['temp_max'] = celsius_to_fahrenheit(data['temp_max'])
+    #     data['temp_min'] = celsius_to_fahrenheit(data['temp_min'])
+
+    # round up 
+    data['temp'] = math.ceil(data['temp'])
+    data['feels_like'] = math.ceil(data['feels_like'])
+    data['temp_max'] = math.ceil(data['temp_max'])
+    data['temp_min'] = math.ceil(data['temp_min'])
+
     # format the response
     report = (
-        f"Weather at this hour is {data['overview']}. {data['description']}", 
-        f"Current temperature is {data['temp']}.", 
-        f"It could feel like {data['feels_like']} because of humidity.",
+        f"Weather in {city}, {data['country_code']} at this hour is {data['overview']}, {data['description']}.", 
+        f"Current temperature is {data['temp']} degrees {uom}.", 
+        f"It could feel like {data['feels_like']} degrees {uom}.",
         f"Humidity is {data['humidity']} percent. ",
         "It is very humid." if data['humidity'] > 75 else "It is a dry day." if data['humidity'] < 25 else "It feels pretty comfortable.",
-        f"Today's temperature can go as high as {data['temp_max']} degrees.",
-        f"At night the temperature can drop to {data['temp_min']} degrees.",
+        f"In the daytime the temperature rises as high as {data['temp_max']} degrees {uom}.",
+        f"At night the temperature drops to {data['temp_min']} degrees {uom}.",
         f"The rain amount is {data['rain_1h']} in the unit of inch. " if 'rain_1h' in data.keys() else "", 
         "Strong Wind." if data['wind_speed'] > 10 else "The wind is calm.",
         "Visibility is poor" if data["visibility"] < 2500 else ""
@@ -167,7 +191,7 @@ def get_weather_detail(city: str, units: str) -> str:
 
 
 #tools = [get_current_temperature, celsius_to_fahrenheit]
-tools = [get_current_temperature, get_weather_detail, get_weather_summary]
+tools = [get_weather_detail, get_weather_summary]
 
 # Define a prompt template
 prompt = ChatPromptTemplate.from_messages([
@@ -307,7 +331,7 @@ def test(place):
     #   If a temperature is negative, include NEGATIVE before the temperature numeric value. 
     #   Do NOT say Celsius or Fahrenheit after temperature.
     prompt2 = ChatPromptTemplate.from_template(
-        """ You are an experienced weather reporter and give daily weather updates on WHBC network. 
+        """ You are an experienced weather reporter and give daily weather updates on WHBC TV Network. 
             Give a vivid and detailed description in a casual tone based on the following weather report. 
             If a temperature is negative, say NEGATIVE before the temperature numeric value. 
             WEATHER REPORT:  
@@ -323,7 +347,8 @@ def test(place):
     audio_file_path = txt2speech(description)
     print("AUDIO: ", audio_file_path)
 
-    # create an image
+    # create an image 
+    # text2image doesn't take or require a lengthy description 
     prompt1 = ChatPromptTemplate.from_template(
         f"Get a brief summary of weather report for the city {place}."
     )
@@ -365,6 +390,6 @@ def app():
 
 
 if __name__ == "__main__": 
-    # Atlanta, Orlando, Houston, New York
-    test("Calgary")
+    # Atlanta, Orlando, Houston, New York, Calgary, Stockholm
+    test("Houston")
     # app()
