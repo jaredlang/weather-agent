@@ -96,7 +96,7 @@ def get_raw_weather_data(city: str, units: str = "metric") -> str:
 
     except requests.exceptions.RequestException as e:
         print("Error:", e)
-        return None
+        raise Exception(f"Weather data not available in the city {city}")
 
 
 @tool 
@@ -391,5 +391,5 @@ def app():
 
 if __name__ == "__main__": 
     # Atlanta, Orlando, Houston, New York, Calgary, Stockholm
-    test("Calgary")
+    test("ABC")
     # app()

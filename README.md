@@ -28,7 +28,7 @@
 6. Add the error handling in the tools
     * Introduce the fallback chain or agent
     * Introduce retry 
-    * Introduce try / catch 
+    * Introduce try / catch / raise
 
 7. Improve the performance 
     * On local CPU TTS takes 2-4 minutes and stable-diffusion takes 20-40 minutes. 
