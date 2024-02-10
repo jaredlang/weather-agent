@@ -34,8 +34,7 @@ OUTPUT_FOLDER = "./output"
 
 OPENAI_MODEL = "gpt-3.5-turbo"
 
-# Define a function as a tool with decorator 
-@tool
+# Define an internal function for the tools to call 
 def celsius_to_fahrenheit(celsius) -> float:
   """
   Converts a temperature in Celsius to Fahrenheit.
@@ -50,19 +49,23 @@ def celsius_to_fahrenheit(celsius) -> float:
   return fahrenheit
 
 
-@tool 
-def get_current_temperature(city: str) -> int:
-    """Retrieves the current temperature in a given city using the OpenWeatherMap API.
+# Define an internal function for the tools to call
+def get_raw_weather_data(city: str, units: str = "metric") -> str:
+    """Retrieves the current weather data in a given city using the OpenWeatherMap API.
 
     Args:
-        city (str): The name of the city to get the temperature for.
+        city (str): The name of the city to get the weather for.
+        units (str): use metric for Celsius, imperial for Fahrenheit.
 
     Returns:
-        int: The current temperature in degrees Celsius. Returns None if an error occurs.
+        int: The current weather in degrees Celsius. Returns None if an error occurs.
     """
-
     base_url = "https://api.openweathermap.org/data/2.5/weather"
-    params = {"q": city, "appid": OPENWEATHER_API_KEY, "units": "metric"}  # Use metric for Celsius
+    params = {
+      "appid": OPENWEATHER_API_KEY, 
+      "q": city,
+      "units": units
+    }  
 
     try:
         response = requests.get(base_url, params=params)
@@ -71,8 +74,23 @@ def get_current_temperature(city: str) -> int:
         data = response.json()
         print("WEATHER DATA: ", json.dumps(data))
 
-        temperature_kelvin = data["main"]["temp"]
-        return math.floor(temperature_kelvin)
+        structured_data = {
+          "overview":  ". ".join([x['main'] for x in data['weather']]), 
+          "description": ". ".join([x['description'] for x in data['weather']]), 
+          "temp": data["main"]["temp"], 
+          "feels_like": data['main']['feels_like'], 
+          "temp_max": data['main']['temp_max'], 
+          "temp_min": data['main']['temp_min'], 
+          "humidity": data['main']['humidity'], 
+          "visibility": data["visibility"], 
+          "wind_speed": data['wind']['speed'], 
+          # data["wind"]["deg"]
+        }
+
+        if 'rain' in data.keys(): 
+            structured_data['rain_1h'] = data['rain']['1h']
+
+        return structured_data
 
     except requests.exceptions.RequestException as e:
         print("Error:", e)
@@ -80,89 +98,72 @@ def get_current_temperature(city: str) -> int:
 
 
 @tool 
-def get_weather_summary(city: str) -> str: 
+def get_current_temperature(city: str, units: str) -> int:
+    """Retrieves the current temperature in a given city.
+
+    Args:
+        city (str): The name of the city to get the temperature for.
+        units (str): use metric for Celsius, imperial for Fahrenheit.
+
+    Returns:
+        int: The current temperature in degrees. Returns None if an error occurs.
+    """
+
+    data = get_raw_weather_data(city, units)
+
+    temperature_kelvin = data['temp']
+    return math.floor(temperature_kelvin)
+    
+
+@tool 
+def get_weather_summary(city: str, units: str) -> str: 
     """Retrieves a brief summary of the current weather in a given city using the OpenWeatherMap API.
 
     Args:
         city (str): The name of the city to get a brief weather report for.
+        units (str): use metric for Celsius, imperial for Fahrenheit.
 
     Returns:
         str: The weather summary. Returns None if an error occurs.
     """
 
-    base_url = "https://api.openweathermap.org/data/2.5/weather"
-    params = {
-        "q": city, 
-        "appid": OPENWEATHER_API_KEY, 
-        # "units": "metric" # Use metric for Celsius
-        "units": "imperial" # Use imperial for fahrenheit
-    }  
+    data = get_raw_weather_data(city, units)
 
-    try:
-        response = requests.get(base_url, params=params)
-        response.raise_for_status()  # Raise an exception for error status codes
+    # format the response
+    summary = f"Weather is {data['overview']}. {data['description']}"
 
-        data = response.json()
-        print("WEATHER DATA: ", json.dumps(data))
+    return summary 
 
-        weather_main_array = ". ".join([x['main'] for x in data['weather']])
-        weather_description_array = ". ".join([x['description'] for x in data['weather']])
-
-        summary = f"Weather is {weather_main_array}. {weather_description_array}"
-
-        return summary 
-
-    except requests.exceptions.RequestException as e:
-        print("Error:", e)
-        return None
-  
-
+    
 @tool 
-def get_weather_detail(city: str) -> str: 
+def get_weather_detail(city: str, units: str) -> str: 
     """Retrieves the detailed weather report for a given city using the OpenWeatherMap API.
 
     Args:
         city (str): The name of the city to get a detailed weather report for.
+        units (str): use metric for Celsius, imperial for Fahrenheit.
 
     Returns:
         str: The weather detail. Returns None if an error occurs.
     """
 
-    base_url = "https://api.openweathermap.org/data/2.5/weather"
-    params = {
-        "q": city, 
-        "appid": OPENWEATHER_API_KEY, 
-        # "units": "metric" # Use metric for Celsius
-        "units": "imperial" # Use imperial for fahrenheit
-    }  
+    data = get_raw_weather_data(city, units)
 
-    try:
-        response = requests.get(base_url, params=params)
-        response.raise_for_status()  # Raise an exception for error status codes
+    # format the response
+    report = (
+        f"Weather at this hour is {data['overview']}. {data['description']}", 
+        f"Current temperature is {data['temp']}.", 
+        f"It could feel like {data['feels_like']} because of humidity.",
+        f"Humidity is {data['humidity']} percent. ",
+        "It is very humid." if data['humidity'] > 75 else "It is a dry day." if data['humidity'] < 25 else "It feels pretty comfortable.",
+        f"Today's temperature can go as high as {data['temp_max']} degrees.",
+        f"At night the temperature can drop to {data['temp_min']} degrees.",
+        f"The rain amount is {data['rain_1h']} in the unit of inch. " if 'rain_1h' in data.keys() else "", 
+        "Strong Wind." if data['wind_speed'] > 10 else "The wind is calm.",
+        "Visibility is poor" if data["visibility"] < 2500 else ""
+    )
 
-        data = response.json()
-        print("WEATHER DATA: ", json.dumps(data))
-
-        weather_main_array = ". ".join([x['main'] for x in data['weather']])
-        weather_description_array = ". ".join([x['description'] for x in data['weather']])
-
-        report = (
-            f"Weather at this hour is {weather_main_array} {weather_description_array}", 
-            f"Current temperature is {math.ceil(data['main']['temp'])}. It could feel like {math.ceil(data['main']['feels_like'])} because of humidity",
-            f"Humidity is {data['main']['humidity']} percent. ",
-            "It is very humid." if data['main']['humidity'] > 75 else "It is a dry day." if data['main']['humidity'] < 25 else "It feels pretty comfortable. ",
-            f"Today's temperature can go as high as {math.ceil(data['main']['temp_max'])} degrees. At night the temperature can drop to {math.floor(data['main']['temp_min'])} degrees. ",
-            f"The rain amount is {data['rain']['1h']} in the unit of inch. " if 'rain' in data.keys() else "", 
-            "Strong Wind." if data['wind']['speed'] > 10 else "The wind is calm.",
-            "Visibility is poor" if data["visibility"] < 2500 else ""
-            # json_data["wind"]["deg"]
-        )
-
-        return report 
-
-    except requests.exceptions.RequestException as e:
-        print("Error:", e)
-        return None
+    return report 
 
 
 #tools = [get_current_temperature, celsius_to_fahrenheit]
@@ -301,7 +302,7 @@ def test(place):
     print("REPORT: ", report)
 
     prompt2 = ChatPromptTemplate.from_template(
-        """ You are an experienced weather reporter in WHBC network. 
+        """ You are an experienced weather reporter and give daily weather updates on WHBC network. 
             Give a vivid and detailed description in a casual tone based on the following weather report: 
             WEATHER REPORT:  {weather_report} 
         """)
@@ -358,5 +359,5 @@ def app():
 
 if __name__ == "__main__": 
     # Atlanta, Orlando, Houston, New York
-    test("New York")
+    test("Calgary")
     # app()
