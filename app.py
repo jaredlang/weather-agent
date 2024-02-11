@@ -322,6 +322,7 @@ def text2image(text, return_dict = None):
 
 agent_executor = create_weather_agent()
 
+
 def create_report(place):
 
     #answer = agent_executor.invoke({"input": "what's the current temperature in London?"})
@@ -403,26 +404,26 @@ def app():
         start_time = time.time()
         placeholder.text(f"Checking the weather ...")
 
-        announcement = create_report(place)
+        report = create_report(place)
 
         end_time = time.time()
         agent_response_time = int(end_time - start_time)
 
         placeholder.text(f"The current weather is:")
 
-        with st.expander("Text"):
-            st.write(announcement["summary"])
+        with st.expander("Summary"):
+            st.write(report["summary"])
 
-        with st.expander("Text"):
-            st.write(announcement["detail"])
+        with st.expander("Detail"):
+            st.write(report["detail"])
 
         with st.expander(f"Audio"):
-           st.audio(announcement["audio"])
+           st.audio(report["audio"])
 
         with st.expander(f"Image"):
-           st.image(announcement["image"])            
+           st.image(report["image"])            
 
-        st.text(f"running time: {agent_response_time} seconds")
+        st.text(f"Running time: {agent_response_time} seconds")
 
 
 if __name__ == "__main__": 

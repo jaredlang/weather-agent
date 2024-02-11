@@ -43,6 +43,6 @@
     * Allow human to review the output of each step 
     * Use AI agents
 
-10. Implement multi-processing for text2speech and text2image 
+10. Implement multi-processing for text2speech and text2image. (DONE)
     * Use multiprocessing 
     
