@@ -381,7 +381,7 @@ def create_report(place):
     for proc in processes:
         proc.join()
 
-    print(return_dict.values())
+    print(return_dict)
 
     return {
         "summary": summary, 
