@@ -24,15 +24,22 @@ from dotenv import load_dotenv
 import requests
 import time
 
+import multiprocessing
+
 import streamlit as st 
 
 load_dotenv()
 OPENWEATHER_API_KEY = os.environ["OPENWEATHER_API_KEY"]
 HUGGINGFACE_API_KEY = os.environ["HUGGINGFACE_API_KEY"]
 
-OUTPUT_FOLDER = "./output"
+OUTPUT_FOLDER = os.environ["OUTPUT_FOLDER"]
+VOICE_SAMPLE = os.environ["VOICE_SAMPLE"]
 
-OPENAI_MODEL = "gpt-3.5-turbo"
+#OPENAI_MODEL = "gpt-3.5-turbo"
+OPENAI_MODEL = os.environ["OPENAI_MODEL"]
+
+# Define a factual LLM 
+llm = ChatOpenAI(model=OPENAI_MODEL, temperature=0)
 
 # Define an internal function for the tools to call 
 def celsius_to_fahrenheit(celsius) -> float:
@@ -97,7 +104,7 @@ def get_raw_weather_data(city: str, units: str = "metric") -> str:
     except requests.exceptions.RequestException as e:
         print("Error:", e)
         raise Exception(f"Weather data not available in the city {city}")
-
+    
 
 @tool 
 def get_current_temperature(city: str, units: str) -> int:
@@ -119,7 +126,7 @@ def get_current_temperature(city: str, units: str) -> int:
 
 @tool 
 def get_weather_summary(city: str, units: str) -> str: 
-    """Retrieves a brief summary of the current weather in a given city using the OpenWeatherMap API.
+    """Retrieves a brief summary of the current weather in a given city.
 
     Args:
         city (str): The name of the city to get a brief weather report for.
@@ -139,7 +146,7 @@ def get_weather_summary(city: str, units: str) -> str:
     
 @tool 
 def get_weather_detail(city: str, units: str) -> str: 
-    """Retrieves the detailed weather report for a given city using the OpenWeatherMap API.
+    """Retrieves the detailed weather report for a given city.
 
     Args:
         city (str): The name of the city to get a detailed weather report for.
@@ -190,40 +197,43 @@ def get_weather_detail(city: str, units: str) -> str:
     return report 
 
 
-#tools = [get_current_temperature, celsius_to_fahrenheit]
-tools = [get_weather_detail, get_weather_summary]
+# create weather agent
+def create_weather_agent(): 
 
-# Define a prompt template
-prompt = ChatPromptTemplate.from_messages([
-    ("system", "You are a very powerful assistant, but don't know current events"), 
-    ("user", "{input}"), 
-    MessagesPlaceholder(variable_name="agent_scratchpad"), 
-])
+    # Define a prompt template
+    prompt = ChatPromptTemplate.from_messages([
+        ("system", "You are a very powerful assistant, but don't know current events"), 
+        ("user", "{input}"), 
+        MessagesPlaceholder(variable_name="agent_scratchpad"), 
+    ])
 
-# Define a factual LLM 
-llm = ChatOpenAI(model=OPENAI_MODEL, temperature=0)
+    # #tools = [get_current_temperature, celsius_to_fahrenheit]
+    tools = [get_weather_detail, get_weather_summary]
 
-# Bind LLM with tools
-llm_with_tools = llm.bind_tools(tools)
+    # Bind LLM with tools
+    llm_with_tools = llm.bind_tools(tools)
 
-# Create an agent 
-agent = (
-    {
-        "input": lambda x: x["input"], 
-        "agent_scratchpad": lambda x: format_to_openai_tool_messages(
-            x["intermediate_steps"]
-        )
-    }
-    | prompt 
-    | llm_with_tools
-    #| llm
-    | OpenAIToolsAgentOutputParser()
-)
+    # Create an agent 
+    agent = (
+        {
+            "input": lambda x: x["input"], 
+            "agent_scratchpad": lambda x: format_to_openai_tool_messages(
+                x["intermediate_steps"]
+            )
+        }
+        | prompt 
+        | llm_with_tools
+        #| llm
+        | OpenAIToolsAgentOutputParser()
+    )
 
-agent_executor = AgentExecutor(agent=agent, tools=tools, verbose=True)
+    agent_executor = AgentExecutor(agent=agent, tools=tools, verbose=True)
+
+    return agent_executor
+
 
 # txt2speech (The best speech)
-def txt2speech(text): 
+def txt2speech(text, return_dict = None): 
 
     tts = TTS("tts_models/multilingual/multi-dataset/xtts_v2", gpu=False)
 
@@ -233,13 +243,16 @@ def txt2speech(text):
     # generate speech by cloning a voice using default settings
     tts.tts_to_file(text=text,
                     file_path=file_path,
-                    speaker_wav=r"./voice_samples/samples_en_sample.wav",
+                    speaker_wav=VOICE_SAMPLE,
                     language="en")
+
+    if return_dict is not None: 
+        return_dict["audio"] = file_path
 
     return file_path
 
 
-def txt2speech_Saas(text): 
+def txt2speech_Saas(text, return_dict = None): 
     #API_URL = "https://api-inference.huggingface.co/models/microsoft/speecht5_tts" # Internal Server Error
     #API_URL = "https://api-inference.huggingface.co/models/suno/bark"  # Requires a paid license
     #API_URL = "https://api-inference.huggingface.co/models/facebook/mms-tts-eng" # Voice is not clear
@@ -257,23 +270,10 @@ def txt2speech_Saas(text):
         with open(file_path, "wb") as f: 
             f.write(response.content)
 
+    if return_dict is not None: 
+        return_dict["audio"] = file_path
+
     return file_path
-
-
-def create_announcement(place): 
-
-    input = f"what's the current temperature in {place}?"
-    answer = agent_executor.invoke({"input": input})
-
-    print("ANSWER: ", answer)
-
-    audio_file_path = txt2speech(answer["output"])
-    print("AUDIO: ", audio_file_path)
-
-    return {
-        "text": answer["output"], 
-        "audio": audio_file_path
-    }
 
 
 def generate_image_df(image_description: str): 
@@ -304,7 +304,7 @@ def generate_image_hf(image_description: str):
         raise Exception(response.content)
 
 
-def text2image(text): 
+def text2image(text, return_dict = None): 
 
     ts = time.time()
     image_format = "png"
@@ -314,15 +314,20 @@ def text2image(text):
     
     image.save(image_file_path, format=image_format)
     
+    if return_dict is not None: 
+        return_dict["image"] = image_file_path
+
     return image_file_path
 
 
-def test(place):
+agent_executor = create_weather_agent()
+
+def create_report(place):
 
     #answer = agent_executor.invoke({"input": "what's the current temperature in London?"})
     #answer = agent_executor.invoke({"input": "what's the current temperature in London? Use Fahrenheit instead Celsius. "})
     #answer = agent_executor.invoke({"input": "what's the current temperature in Houston? Use Fahrenheit. "})
-    report = agent_executor.invoke({"input": f"Get a detailed weather report for the city {place}?"})
+    report = agent_executor.invoke({"input": f"Get a detailed weather report for the city of {place}?"})
     print("REPORT: ", report)
 
     #!!! Use prompt to make sure the announcement doesn't miss negative before temperature. 
@@ -344,21 +349,46 @@ def test(place):
     print("DESCRIPTIION for audio: ", description)
     #description_excerpt = "\n\n".join(description.split("\n\n")[:3])
 
-    audio_file_path = txt2speech(description)
-    print("AUDIO: ", audio_file_path)
+    # prompt1 = ChatPromptTemplate.from_template(
+    #     f"Get a brief summary of weather report for the city {place}."
+    # )
+    # chain1 = {"place": RunnablePassthrough()} | prompt1 | llm_with_tools | StrOutputParser()
+
+    summary = agent_executor.invoke({"input": f"Get a weather summary for the city of {place}. It must be less than 15 words. Do NOT repeat any word in the input."})
+    print("SUMMARY for image:", summary)
+
+    # Use multiprocess to start both text2speech and text2image
+    # Use a shared variable to communicate
+    proc_manager = multiprocessing.Manager()
+    return_dict = proc_manager.dict()
+
+    # create an audio 
+    ttsph_process = multiprocessing.Process(target=txt2speech, args=(description, return_dict))
+    # audio_file_path = txt2speech(description)
+    # print("AUDIO: ", audio_file_path)
 
     # create an image 
     # text2image doesn't take or require a lengthy description 
-    prompt1 = ChatPromptTemplate.from_template(
-        f"Get a brief summary of weather report for the city {place}."
-    )
-    #chain1 = {"place": RunnablePassthrough()} | prompt1 | llm_with_tools | StrOutputParser()
+    ttimg_process = multiprocessing.Process(target=text2image, args=(summary["output"], return_dict))
+    # image_file_path = text2image(summary["output"])
+    # print("IMAGE: ", image_file_path)    
 
-    summary = agent_executor.invoke({"input": f"Get a weather summary for the city {place}. It must be less than 15 words. Do NOT repeat any word in the input."})
-    print("SUMMARY for image:", summary)
+    processes = [ttsph_process, ttimg_process]
 
-    image_file_path = text2image(summary["output"])
-    print("IMAGE: ", image_file_path)    
+    for proc in processes: 
+        proc.start()
+
+    for proc in processes:
+        proc.join()
+
+    print(return_dict.values())
+
+    return {
+        "summary": summary, 
+        "detail": description, 
+        "audio": return_dict["audio"], 
+        "image": return_dict["image"], 
+    }
 
 
 def app(): 
@@ -373,7 +403,7 @@ def app():
         start_time = time.time()
         placeholder.text(f"Checking the weather ...")
 
-        announcement = create_announcement(place)
+        announcement = create_report(place)
 
         end_time = time.time()
         agent_response_time = int(end_time - start_time)
@@ -381,15 +411,22 @@ def app():
         placeholder.text(f"The current weather is:")
 
         with st.expander("Text"):
-            st.write(announcement["text"])
+            st.write(announcement["summary"])
+
+        with st.expander("Text"):
+            st.write(announcement["detail"])
 
         with st.expander(f"Audio"):
-           st.audio(announcement["audio"])            
+           st.audio(announcement["audio"])
+
+        with st.expander(f"Image"):
+           st.image(announcement["image"])            
 
         st.text(f"running time: {agent_response_time} seconds")
 
 
 if __name__ == "__main__": 
-    # Atlanta, Orlando, Houston, New York, Calgary, Stockholm
-    test("ABC")
+    # Atlanta, Orlando, Houston, New York, Calgary, Stockholm, Seattle
+    # ABC, XYZ - negative testing
+    create_report("Houston")
     # app()

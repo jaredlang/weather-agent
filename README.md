@@ -42,3 +42,7 @@
 9. Add the review steps to the creation process
     * Allow human to review the output of each step 
     * Use AI agents
+
+10. Implement multi-processing for text2speech and text2image 
+    * Use multiprocessing 
+    
