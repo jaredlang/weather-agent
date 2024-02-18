@@ -33,16 +33,19 @@
 7. Improve the performance 
     * On local CPU TTS takes 2-4 minutes and stable-diffusion takes 20-40 minutes. 
     * On P4000 or RTX6000, it takes half of that time. The cost is about $0.5/hr on Paperspace bare metal VM. 
-    * To be tested on a hosted environment
+    * To be tested on a hosted environment (Huggingface, Azure OpenAI or AWS Sagemaker)
 
 8. Set up an async running model for web ui 
     * Start a process and notify the user when it is generated 
     * Store the historical inputs and outputs for the future reference
 
-9. Add the review steps to the creation process
+9. Add the review steps to review/critic the generated content
     * Allow human to review the output of each step 
-    * Use AI agents
+    * Use AutoGen and AI assistants 
 
 10. Implement multi-processing for text2speech and text2image. (DONE)
     * Use multiprocessing 
-    
+
+11. Store the generated data for the future reference. 
+    * Store text/audio/image into blob storage 
+    * Create UI to retrieve the stored content 

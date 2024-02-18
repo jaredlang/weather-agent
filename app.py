@@ -1,10 +1,7 @@
-import math
-import json 
 from langchain_core.prompts import ChatPromptTemplate, MessagesPlaceholder
 from langchain_core.runnables import RunnablePassthrough
 from langchain.schema import StrOutputParser
 from langchain_openai import ChatOpenAI
-from langchain.agents import tool 
 from langchain.agents.format_scratchpad.openai_tools import (
     format_to_openai_tool_messages
 )
@@ -13,188 +10,25 @@ from langchain.agents.output_parsers.openai_tools import (
 )
 from langchain.agents import AgentExecutor
 
-from TTS.api import TTS
-
-from diffusers import DiffusionPipeline
-import io
-from PIL import Image
-
-import os
+from os import environ
 from dotenv import load_dotenv
-import requests
 import time
+
+from modules.tools import get_weather_summary, get_weather_detail
+from modules.txt2speech import txt2speech
+from modules.txt2image import text2image
 
 import multiprocessing
 
 import streamlit as st 
 
 load_dotenv()
-OPENWEATHER_API_KEY = os.environ["OPENWEATHER_API_KEY"]
-HUGGINGFACE_API_KEY = os.environ["HUGGINGFACE_API_KEY"]
-
-OUTPUT_FOLDER = os.environ["OUTPUT_FOLDER"]
-VOICE_SAMPLE = os.environ["VOICE_SAMPLE"]
 
 #OPENAI_MODEL = "gpt-3.5-turbo"
-OPENAI_MODEL = os.environ["OPENAI_MODEL"]
+OPENAI_MODEL = environ["OPENAI_MODEL"]
 
 # Define a factual LLM 
 llm = ChatOpenAI(model=OPENAI_MODEL, temperature=0)
-
-# Define an internal function for the tools to call 
-def celsius_to_fahrenheit(celsius) -> float:
-  """
-  Converts a temperature in Celsius to Fahrenheit.
-
-  Args:
-      celsius: The temperature in degrees Celsius.
-
-  Returns:
-      The temperature in degrees Fahrenheit.
-  """
-  fahrenheit = math.floor((celsius * 9/5) + 32)
-  return fahrenheit
-
-
-# Define an internal function for the tools to call
-def get_raw_weather_data(city: str, units: str = "metric") -> str:
-    """Retrieves the current weather data in a given city using the OpenWeatherMap API.
-
-    Args:
-        city (str): The name of the city to get the weather for.
-        units (str): use metric for Celsius, imperial for Fahrenheit.
-
-    Returns:
-        int: The current weather in degrees Celsius. Returns None if an error occurs.
-    """
-    base_url = "https://api.openweathermap.org/data/2.5/weather"
-    params = {
-      "appid": OPENWEATHER_API_KEY, 
-      "q": city,
-      "units": units
-    }  
-
-    try:
-        response = requests.get(base_url, params=params)
-        response.raise_for_status()  # Raise an exception for error status codes
-
-        data = response.json()
-        print("WEATHER DATA: ", json.dumps(data))
-
-        structured_data = {
-            "city": city, 
-            "country_code": data['sys']['country'], 
-            "overview":  ". ".join([x['main'] for x in data['weather']]), 
-            "description": ". ".join([x['description'] for x in data['weather']]), 
-            "temp": data["main"]["temp"], 
-            "feels_like": data['main']['feels_like'], 
-            "temp_max": data['main']['temp_max'], 
-            "temp_min": data['main']['temp_min'], 
-            "humidity": data['main']['humidity'], 
-            "visibility": data["visibility"], 
-            "wind_speed": data['wind']['speed'], 
-            # data["wind"]["deg"]
-        }
-
-        if 'rain' in data.keys(): 
-            structured_data['rain_1h'] = data['rain']['1h']
-
-        return structured_data
-
-    except requests.exceptions.RequestException as e:
-        print("Error:", e)
-        raise Exception(f"Weather data not available in the city {city}")
-    
-
-@tool 
-def get_current_temperature(city: str, units: str) -> int:
-    """Retrieves the current temperature in a given city.
-
-    Args:
-        city (str): The name of the city to get the temperature for.
-        units (str): use metric for Celsius, imperial for Fahrenheit.
-
-    Returns:
-        int: The current temperature in degrees. Returns None if an error occurs.
-    """
-
-    data = get_raw_weather_data(city, units)
-
-    temperature_kelvin = data['temp']
-    return math.floor(temperature_kelvin)
-    
-
-@tool 
-def get_weather_summary(city: str, units: str) -> str: 
-    """Retrieves a brief summary of the current weather in a given city.
-
-    Args:
-        city (str): The name of the city to get a brief weather report for.
-        units (str): use metric for Celsius, imperial for Fahrenheit.
-
-    Returns:
-        str: The weather summary. Returns None if an error occurs.
-    """
-
-    data = get_raw_weather_data(city, units)
-
-    # format the response
-    summary = f"Weather is {data['overview']}, {data['description']}."
-
-    return summary 
-
-    
-@tool 
-def get_weather_detail(city: str, units: str) -> str: 
-    """Retrieves the detailed weather report for a given city.
-
-    Args:
-        city (str): The name of the city to get a detailed weather report for.
-        units (str): use metric for Celsius, imperial for Fahrenheit.
-
-    Returns:
-        str: The weather detail. Returns None if an error occurs.
-    """
-
-    data = get_raw_weather_data(city, units)
-
-    # After adding the units parameter to the get_raw_weather_data tool, 
-    # LLM knows what unit of measure depending on the city location. 
-    # SMART! 
-    # 
-    # Just specify the unit of measure 
-    uom = "fahrenheit" if units == "imperial" else "celsius" 
-    # - No need for a manual conversion. 
-    # For United State, Liberia, Myanmar, convert the temp to fahrenheit
-    # uom = "celsius" # by default
-    # if units == "imperial": 
-    #     uom = "fahrenheit"
-    #     data['temp'] = celsius_to_fahrenheit(data['temp'])
-    #     data['feels_like'] = celsius_to_fahrenheit(data['feels_like'])
-    #     data['temp_max'] = celsius_to_fahrenheit(data['temp_max'])
-    #     data['temp_min'] = celsius_to_fahrenheit(data['temp_min'])
-
-    # round up 
-    data['temp'] = math.ceil(data['temp'])
-    data['feels_like'] = math.ceil(data['feels_like'])
-    data['temp_max'] = math.ceil(data['temp_max'])
-    data['temp_min'] = math.ceil(data['temp_min'])
-
-    # format the response
-    report = (
-        f"Weather in {city}, {data['country_code']} at this hour is {data['overview']}, {data['description']}.", 
-        f"Current temperature is {data['temp']} degrees {uom}.", 
-        f"It could feel like {data['feels_like']} degrees {uom}.",
-        f"Humidity is {data['humidity']} percent. ",
-        "It is very humid." if data['humidity'] > 75 else "It is a dry day." if data['humidity'] < 25 else "It feels pretty comfortable.",
-        f"In the daytime the temperature rises as high as {data['temp_max']} degrees {uom}.",
-        f"At night the temperature drops to {data['temp_min']} degrees {uom}.",
-        f"The rain amount is {data['rain_1h']} in the unit of inch. " if 'rain_1h' in data.keys() else "", 
-        "Strong Wind." if data['wind_speed'] > 10 else "The wind is calm.",
-        "Visibility is poor" if data["visibility"] < 2500 else ""
-    )
-
-    return report 
 
 
 # create weather agent
@@ -230,94 +64,6 @@ def create_weather_agent():
     agent_executor = AgentExecutor(agent=agent, tools=tools, verbose=True)
 
     return agent_executor
-
-
-# txt2speech (The best speech)
-def txt2speech(text, return_dict = None): 
-
-    tts = TTS("tts_models/multilingual/multi-dataset/xtts_v2", gpu=False)
-
-    ts = time.time()
-    file_path = f"{OUTPUT_FOLDER}/story_Coqui-{ts}.wav"
-    
-    # generate speech by cloning a voice using default settings
-    tts.tts_to_file(text=text,
-                    file_path=file_path,
-                    speaker_wav=VOICE_SAMPLE,
-                    language="en")
-
-    if return_dict is not None: 
-        return_dict["audio"] = file_path
-
-    return file_path
-
-
-def txt2speech_Saas(text, return_dict = None): 
-    #API_URL = "https://api-inference.huggingface.co/models/microsoft/speecht5_tts" # Internal Server Error
-    #API_URL = "https://api-inference.huggingface.co/models/suno/bark"  # Requires a paid license
-    #API_URL = "https://api-inference.huggingface.co/models/facebook/mms-tts-eng" # Voice is not clear
-    API_URL = "https://api-inference.huggingface.co/models/espnet/kan-bayashi_ljspeech_vits"
-    headers = {"Authorization": f"Bearer {HUGGINGFACE_API_KEY}"}
-
-    payload = { "inputs": text }
-
-    response = requests.post(API_URL, headers=headers, json=payload)
-    if ("error" in response):
-        print(response.error)
-    else:
-        ts = time.time()
-        file_path = f"{OUTPUT_FOLDER}/announcement-{ts}.wav"
-        with open(file_path, "wb") as f: 
-            f.write(response.content)
-
-    if return_dict is not None: 
-        return_dict["audio"] = file_path
-
-    return file_path
-
-
-def generate_image_df(image_description: str): 
-    pipeline = DiffusionPipeline.from_pretrained("stabilityai/stable-diffusion-2-1")
-    result = pipeline(image_description, num_inference_steps=50)
-    image = result.images[0]
-
-    return image
-
-
-def generate_image_hf(image_description: str): 
-    # Huggingface model: 
-    # API_URL = "https://api-inference.huggingface.co/models/stabilityai/stable-diffusion-xl-base-1.0"
-    API_URL = "https://api-inference.huggingface.co/models/stabilityai/stable-diffusion-2-1"
-    headers = {"Authorization": F"Bearer {HUGGINGFACE_API_KEY}"}
-    
-    response = requests.post(API_URL, headers=headers, json={
-        "inputs": image_description + ". Make the image more cartoonish.",
-    })
-
-    if response.ok: 
-        image_bytes = response.content
-        # You can access the image with PIL.Image for example
-        image = Image.open(io.BytesIO(image_bytes))
-        return image
-    
-    else:
-        raise Exception(response.content)
-
-
-def text2image(text, return_dict = None): 
-
-    ts = time.time()
-    image_format = "png"
-    image_file_path = f"{OUTPUT_FOLDER}/image-{ts}.{image_format}"
-
-    image = generate_image_df(text)
-    
-    image.save(image_file_path, format=image_format)
-    
-    if return_dict is not None: 
-        return_dict["image"] = image_file_path
-
-    return image_file_path
 
 
 agent_executor = create_weather_agent()
@@ -429,5 +175,5 @@ def app():
 if __name__ == "__main__": 
     # Atlanta, Orlando, Houston, New York, Calgary, Stockholm, Seattle
     # ABC, XYZ - negative testing
-    create_report("Houston")
+    create_report("Stockholm")
     # app()
