@@ -69,6 +69,18 @@ def create_weather_agent():
 agent_executor = create_weather_agent()
 
 
+def txt2speech_subproc(text: str, return_dict=None) -> str: 
+    audio_file_path = txt2speech(text)
+    if return_dict is not None: 
+        return_dict["audio"] = audio_file_path
+
+
+def txt2image_subproc(text: str, return_dict=None) -> str: 
+    image_file_path = text2image(text)
+    if return_dict is not None: 
+        return_dict["image"] = image_file_path
+    
+
 def create_report(place):
 
     #answer = agent_executor.invoke({"input": "what's the current temperature in London?"})
@@ -110,13 +122,13 @@ def create_report(place):
     return_dict = proc_manager.dict()
 
     # create an audio 
-    ttsph_process = multiprocessing.Process(target=txt2speech, args=(description, return_dict))
+    ttsph_process = multiprocessing.Process(target=txt2speech_subproc, args=(description, return_dict))
     # audio_file_path = txt2speech(description)
     # print("AUDIO: ", audio_file_path)
 
     # create an image 
     # text2image doesn't take or require a lengthy description 
-    ttimg_process = multiprocessing.Process(target=text2image, args=(summary["output"], return_dict))
+    ttimg_process = multiprocessing.Process(target=txt2image_subproc, args=(summary["output"], return_dict))
     # image_file_path = text2image(summary["output"])
     # print("IMAGE: ", image_file_path)    
 

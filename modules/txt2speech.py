@@ -18,7 +18,7 @@ HF_TXT_TO_SPEECH_API_URL = "https://api-inference.huggingface.co/models/espnet/k
 
 
 # txt2speech (The best speech)
-def txt2speech_tts(text, return_dict = None): 
+def txt2speech_tts(narrative: str) -> str: 
 
     tts = TTS(HF_TXT_TO_SPEECH_MODEL, gpu=False)
 
@@ -26,21 +26,18 @@ def txt2speech_tts(text, return_dict = None):
     file_path = f"{OUTPUT_FOLDER}/story_Coqui-{ts}.wav"
     
     # generate speech by cloning a voice using default settings
-    tts.tts_to_file(text=text,
+    tts.tts_to_file(text=narrative,
                     file_path=file_path,
                     speaker_wav=VOICE_SAMPLE,
                     language="en")
 
-    if return_dict is not None: 
-        return_dict["audio"] = file_path
-
     return file_path
 
 
-def txt2speech_Saas(text, return_dict = None): 
+def txt2speech_Saas(narrative: str) -> str: 
     headers = {"Authorization": f"Bearer {HUGGINGFACE_API_KEY}"}
 
-    payload = { "inputs": text }
+    payload = { "inputs": narrative }
 
     response = requests.post(HF_TXT_TO_SPEECH_API_URL, headers=headers, json=payload)
     if ("error" in response):
@@ -51,12 +48,9 @@ def txt2speech_Saas(text, return_dict = None):
         with open(file_path, "wb") as f: 
             f.write(response.content)
 
-    if return_dict is not None: 
-        return_dict["audio"] = file_path
-
     return file_path
 
 
-def txt2speech(text, return_dict = None):
+def txt2speech(narrative: str) -> str:
 
-    return txt2speech_tts(text, return_dict)
+    return txt2speech_tts(narrative)
