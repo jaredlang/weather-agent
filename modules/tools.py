@@ -53,7 +53,7 @@ def get_raw_weather_data(city: str, units: str = "metric") -> str:
         structured_data = {
             "city": city, 
             "country_code": data['sys']['country'], 
-            "overview":  ". ".join([x['main'] for x in data['weather']]), 
+            "summary":  ". ".join([x['main'] for x in data['weather']]), 
             "description": ". ".join([x['description'] for x in data['weather']]), 
             "temp": data["main"]["temp"], 
             "feels_like": data['main']['feels_like'], 
@@ -108,7 +108,7 @@ def get_weather_summary(city: str, units: str) -> str:
     data = get_raw_weather_data(city, units)
 
     # format the response
-    summary = f"Weather is {data['overview']}, {data['description']}."
+    summary = f"Weather is {data['summary']}, {data['description']}."
 
     return summary 
 
@@ -151,7 +151,7 @@ def get_weather_detail(city: str, units: str) -> str:
 
     # format the response
     report = (
-        f"Weather in {city}, {data['country_code']} at this hour is {data['overview']}, {data['description']}.", 
+        f"Weather in {city}, {data['country_code']} at this hour is {data['summary']}, {data['description']}.", 
         f"Current temperature is {data['temp']} degrees {uom}.", 
         f"It could feel like {data['feels_like']} degrees {uom}.",
         f"Humidity is {data['humidity']} percent. ",
