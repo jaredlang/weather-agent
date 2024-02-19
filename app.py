@@ -157,7 +157,7 @@ def create_report(place):
 def test_image_repl(): 
     # # Start the conversation
     user_proxy.initiate_chat(
-        manager, message="Generate a photo realistic image of rabbit driving a car")
+        manager, message="Sunny sky with few clouds, low at 37 and high at 73")
 
 
 def app(): 
@@ -197,6 +197,6 @@ def app():
 if __name__ == "__main__": 
     # Atlanta, Orlando, Houston, New York, Calgary, Stockholm, Seattle
     # ABC, XYZ - negative testing
-    # create_report("Stockholm")
-    test_image_repl()
+    create_report("Atlanta")
+    # test_image_repl()
     # app()

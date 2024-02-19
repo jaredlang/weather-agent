@@ -57,8 +57,8 @@ autogen_llm_config_assistants = {
 graphic_designer = AssistantAgent(
     name="graphic_designer",
     # system_message="You are a text to image AI model expert, you will use text_to_image function to generate image with prompt provided, and also improve prompt based on feedback provided until it is 10/10.",
-    system_message="""Graphic Designer. You are a helpful assistant highly skilled in creating an image to reflect a text description. 
-You MUST try every way to create an image to visualize the description. 
+    system_message="""Graphic Designer. You are a helpful assistant highly skilled in creating weather forecast images for weather app and UI design on Android screen. 
+You MUST try every way to create an image to visualize the given description. 
 If you are not familiar with the description, you use the stocked images and modify them to represent the description. 
 You should continue creating images until the graphic_critic gives an average score higher than 9. 
 """, 

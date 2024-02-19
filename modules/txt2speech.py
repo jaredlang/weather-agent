@@ -1,6 +1,6 @@
 from os import environ
 import requests
-import time
+from datetime import datetime
 
 from TTS.api import TTS
 
@@ -18,12 +18,9 @@ HF_TXT_TO_SPEECH_API_URL = "https://api-inference.huggingface.co/models/espnet/k
 
 
 # txt2speech (The best speech)
-def txt2speech_tts(narrative: str) -> str: 
+def txt2speech_tts(narrative: str, file_path: str) -> str: 
 
     tts = TTS(HF_TXT_TO_SPEECH_MODEL, gpu=False)
-
-    ts = time.time()
-    file_path = f"{OUTPUT_FOLDER}/story_Coqui-{ts}.wav"
     
     # generate speech by cloning a voice using default settings
     tts.tts_to_file(text=narrative,
@@ -34,7 +31,7 @@ def txt2speech_tts(narrative: str) -> str:
     return file_path
 
 
-def txt2speech_Saas(narrative: str) -> str: 
+def txt2speech_Saas(narrative: str, file_path: str) -> str: 
     headers = {"Authorization": f"Bearer {HUGGINGFACE_API_KEY}"}
 
     payload = { "inputs": narrative }
@@ -43,8 +40,6 @@ def txt2speech_Saas(narrative: str) -> str:
     if ("error" in response):
         print(response.error)
     else:
-        ts = time.time()
-        file_path = f"{OUTPUT_FOLDER}/announcement-{ts}.wav"
         with open(file_path, "wb") as f: 
             f.write(response.content)
 
@@ -53,4 +48,7 @@ def txt2speech_Saas(narrative: str) -> str:
 
 def txt2speech(narrative: str) -> str:
 
-    return txt2speech_tts(narrative)
+    ts = datetime.now().strftime("%Y%m%d%H%M%S")
+    file_path = f"{OUTPUT_FOLDER}/speech-{ts}.wav"
+
+    return txt2speech_tts(narrative, file_path)
