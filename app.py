@@ -18,6 +18,8 @@ from modules.tools import get_weather_summary, get_weather_detail
 from modules.txt2speech import txt2speech
 from modules.txt2image import text2image
 
+from modules.autogen_agent import user_proxy, manager
+
 import multiprocessing
 
 import streamlit as st 
@@ -26,6 +28,8 @@ load_dotenv()
 
 #OPENAI_MODEL = "gpt-3.5-turbo"
 OPENAI_MODEL = environ["OPENAI_MODEL"]
+
+REPLICATE_API_TOKEN = environ["REPLICATE_API_TOKEN"]
 
 # Define a factual LLM 
 llm = ChatOpenAI(model=OPENAI_MODEL, temperature=0)
@@ -150,6 +154,12 @@ def create_report(place):
     }
 
 
+def test_image_repl(): 
+    # # Start the conversation
+    user_proxy.initiate_chat(
+        manager, message="Generate a photo realistic image of rabbit driving a car")
+
+
 def app(): 
     st.set_page_config(page_title="AI Weather Agent", page_icon=":bird:")
 
@@ -187,5 +197,6 @@ def app():
 if __name__ == "__main__": 
     # Atlanta, Orlando, Houston, New York, Calgary, Stockholm, Seattle
     # ABC, XYZ - negative testing
-    create_report("Stockholm")
+    # create_report("Stockholm")
+    test_image_repl()
     # app()

@@ -32,6 +32,9 @@ output/*
 # exception to the rule and keep the output folder
 !output/.gitkeep 
 
+# exclude the OAI_CONFIG_LIST file 
+OAI_CONFIG_LIST
+
 # PyInstaller
 #  Usually these files are written by a python script from a template
 #  before PyInstaller builds the exe, so as to inject date/other infos into it.
