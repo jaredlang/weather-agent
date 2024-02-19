@@ -30,7 +30,7 @@
 6. Add the review steps to review/critic the generated content (In Progress)
     * Allow human to review the output of each step 
     * Use AutoGen and assistants (graphic designer and critic)
-    * Run stability-ai/sdxl for image creation and yorickvp/llava for image review on 
+    * Run stability-ai/sdxl for image creation and yorickvp/llava for image review on [replicate.com](https://replicate.com)
 
 7. Improve the performance (In Progress)
     * On local CPU TTS takes 2-4 minutes and stable-diffusion takes 20-40 minutes. 
