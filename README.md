@@ -39,9 +39,10 @@
     * Start a process and notify the user when it is generated 
     * Store the historical inputs and outputs for the future reference
 
-9. Add the review steps to review/critic the generated content
+9. Add the review steps to review/critic the generated content (In Progress)
     * Allow human to review the output of each step 
-    * Use AutoGen and AI assistants 
+    * Use AutoGen and assistants (graphic designer and critic)
+    * Run stability-ai/sdxl hosted on replicate.com for image creation and review 
 
 10. Implement multi-processing for text2speech and text2image. (DONE)
     * Use multiprocessing 
