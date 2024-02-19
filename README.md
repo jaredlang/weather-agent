@@ -22,22 +22,23 @@
 4. Need to get other weather data besides the temperature. (DONE)
 
 5. There is no image to show the weather data (In Progress)
-    * Use the stabilityai/stable-diffusion-2-1 model to generate a city-view image. 
-    * Next steps: use a smaller or specific model to generate a weather image or icon 
+    * stabilityai/stable-diffusion-2-1 model generates a city-view image. 
+    * stabilityai/stabilityai/sdxl-turbo model generates a city-view image. 
+    * Next steps: use a specific model to generate a weather image or icon 
+    * Use a different model to create an image based on the prompt and a sample image 
 
 6. Add the review steps to review/critic the generated content (In Progress)
     * Allow human to review the output of each step 
     * Use AutoGen and assistants (graphic designer and critic)
     * Run stability-ai/sdxl for image creation and yorickvp/llava for image review
-    * Use a different model to create an image based on the prompt and a sample image 
 
 7. Improve the performance (In Progress)
     * On local CPU TTS takes 2-4 minutes and stable-diffusion takes 20-40 minutes. 
-    * On P4000 or RTX6000, it takes half of that time. The cost is about $0.5/hr on Paperspace bare metal VM. 
+    * On P4000 or RTX6000, it takes half of that time. The cost is about $0.5/hr on [Paperspace](https://paperspace.com) bare metal VM. 
     * Implemented multi-processing for text2speech and text2image
     * To be tested on a hosted environment (Huggingface, Azure OpenAI or AWS Sagemaker)
-    * replicate.com offers a performant run on some largest models (image run returns withn 20s and costs less than $0.01/hr per run)
-    * To host the coqui-xtts-v2 model on replicate.com
+    * [replicate.com](https://replicate.com) offers a performant run on some largest models (image run returns withn 20s and costs less than $0.01/hr per run)
+    * To host the coqui-xtts-v2 model on [replicate.com](https://replicate.com)
 
 8. Store the generated data for the future reference (To Do)
     * Store text/audio/image into blob storage 
