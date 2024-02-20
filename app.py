@@ -10,7 +10,7 @@ from langchain.agents.output_parsers.openai_tools import (
 )
 from langchain.agents import AgentExecutor
 
-from os import environ
+import os 
 from dotenv import load_dotenv
 import time
 
@@ -27,9 +27,11 @@ import streamlit as st
 load_dotenv()
 
 #OPENAI_MODEL = "gpt-3.5-turbo"
-OPENAI_MODEL = environ["OPENAI_MODEL"]
+OPENAI_MODEL = os.environ["OPENAI_MODEL"]
 
-REPLICATE_API_TOKEN = environ["REPLICATE_API_TOKEN"]
+REPLICATE_API_TOKEN = os.environ["REPLICATE_API_TOKEN"]
+
+OUTPUT_FOLDER = os.environ["OUTPUT_FOLDER"]
 
 # Define a factual LLM 
 llm = ChatOpenAI(model=OPENAI_MODEL, temperature=0)
@@ -73,19 +75,23 @@ def create_weather_agent():
 agent_executor = create_weather_agent()
 
 
-def txt2speech_subproc(text: str, return_dict=None) -> str: 
-    audio_file_path = txt2speech(text)
+def txt2speech_subproc(text: str, output_folder: str, return_dict=None) -> str: 
+    audio_file_path = txt2speech(text, output_folder)
     if return_dict is not None: 
         return_dict["audio"] = audio_file_path
 
 
-def txt2image_subproc(text: str, return_dict=None) -> str: 
-    image_file_path = text2image(text)
+def txt2image_subproc(text: str, output_folder: str, return_dict=None) -> str: 
+    image_file_path = text2image(text, output_folder)
     if return_dict is not None: 
         return_dict["image"] = image_file_path
     
 
 def create_report(place):
+
+    output_folder = os.path.join(OUTPUT_FOLDER, place)
+    if not os.path.exists(output_folder):
+        os.mkdir(output_folder)
 
     #answer = agent_executor.invoke({"input": "what's the current temperature in London?"})
     #answer = agent_executor.invoke({"input": "what's the current temperature in London? Use Fahrenheit instead Celsius. "})
@@ -126,13 +132,19 @@ def create_report(place):
     return_dict = proc_manager.dict()
 
     # create an audio 
-    ttsph_process = multiprocessing.Process(target=txt2speech_subproc, args=(description, return_dict))
+    ttsph_process = multiprocessing.Process(
+        target=txt2speech_subproc, 
+        args=(description, output_folder, return_dict)
+    )
     # audio_file_path = txt2speech(description)
     # print("AUDIO: ", audio_file_path)
 
     # create an image 
     # text2image doesn't take or require a lengthy description 
-    ttimg_process = multiprocessing.Process(target=txt2image_subproc, args=(summary["output"], return_dict))
+    ttimg_process = multiprocessing.Process(
+        target=txt2image_subproc, 
+        args=(summary["output"], output_folder, return_dict)
+    )
     # image_file_path = text2image(summary["output"])
     # print("IMAGE: ", image_file_path)    
 

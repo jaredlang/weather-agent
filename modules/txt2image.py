@@ -1,3 +1,4 @@
+from dotenv import load_dotenv
 from os import environ
 import requests
 from datetime import datetime
@@ -8,9 +9,9 @@ from PIL import Image
 
 import replicate
 
-HUGGINGFACE_API_KEY = environ["HUGGINGFACE_API_KEY"]
+load_dotenv()
 
-OUTPUT_FOLDER = environ["OUTPUT_FOLDER"]
+HUGGINGFACE_API_KEY = environ["HUGGINGFACE_API_KEY"]
 
 HF_TXT_TO_IMAGE_MODEL = "stabilityai/sdxl-turbo"
 # "stabilityai/stable-diffusion-2-1"
@@ -72,11 +73,11 @@ def generate_image_repl(prompt: str) -> str:
         raise Exception("Failed to generate the image.")
 
 
-def text2image(image_description: str) -> str: 
+def text2image(image_description: str, output_folder: str) -> str: 
 
     ts = datetime.now().strftime("%Y%m%d%H%M%S")
     image_format = "png"
-    image_file_path = f"{OUTPUT_FOLDER}/image-{ts}.{image_format}"
+    image_file_path = f"{output_folder}/image-{ts}.{image_format}"
 
     image = generate_image_repl(image_description)
     
