@@ -13,6 +13,8 @@ load_dotenv()
 
 HUGGINGFACE_API_KEY = environ["HUGGINGFACE_API_KEY"]
 
+USE_GPU = environ["USE_GPU"]
+
 HF_TXT_TO_IMAGE_MODEL = "stabilityai/sdxl-turbo"
 # "stabilityai/stable-diffusion-2-1"
 HF_TXT_TO_IMAGE_API_URL = "https://api-inference.huggingface.co/models/stabilityai/stable-diffusion-2-1"
@@ -21,7 +23,7 @@ HF_TXT_TO_IMAGE_API_URL = "https://api-inference.huggingface.co/models/stability
 # hosted on Replicate.com 
 R8_TXT_TO_IMAGE_API_URL = "stability-ai/sdxl:c221b2b8ef527988fb59bf24a8b97c4561f1c671f73bd389f866bfb27c061316"
 
-def generate_image_df(image_description: str): 
+def generate_image_local(image_description: str): 
     pipeline = DiffusionPipeline.from_pretrained(HF_TXT_TO_IMAGE_MODEL)
     result = pipeline(image_description, num_inference_steps=50)
 
@@ -54,6 +56,7 @@ def generate_image_repl(prompt: str) -> str:
             "prompt": prompt
         }
     )
+    print("REPLLICATE OUTPUT: ", output)
 
     if output and len(output) > 0:
         # Get the image URL from the output
@@ -79,7 +82,14 @@ def text2image(image_description: str, output_folder: str) -> str:
     image_format = "png"
     image_file_path = f"{output_folder}/image-{ts}.{image_format}"
 
-    image = generate_image_repl(image_description)
+    image = None
+    if USE_GPU: 
+        image = generate_image_local(image_description)
+    else:
+        image = generate_image_repl(image_description)
+    
+    if image == None: 
+        raise Exception("Error: no image generated")
     
     image.save(image_file_path, format=image_format)
     

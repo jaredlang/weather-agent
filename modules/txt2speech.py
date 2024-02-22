@@ -4,6 +4,7 @@ import requests
 from datetime import datetime
 
 from TTS.api import TTS
+import replicate
 
 load_dotenv()
 
@@ -19,9 +20,10 @@ HF_TXT_TO_SPEECH_API_URL = "https://api-inference.huggingface.co/models/espnet/k
 # "https://api-inference.huggingface.co/models/suno/bark"  # Requires a paid license
 # "https://api-inference.huggingface.co/models/facebook/mms-tts-eng" # Voice is not clear
 
+R8_TXT_TO_SPEECH_API_URL = "jaredlang/coqui-xtts-v2:f9f291e17c701929dea2ae927597b219f8a18f32b53a30984719801911d076f4"
 
 # txt2speech (The best speech)
-def txt2speech_tts(narrative: str, file_path: str) -> str: 
+def txt2speech_local(narrative: str, file_path: str) -> str: 
 
     tts = TTS(HF_TXT_TO_SPEECH_MODEL, gpu=(USE_GPU == "True"))
     
@@ -34,7 +36,7 @@ def txt2speech_tts(narrative: str, file_path: str) -> str:
     return file_path
 
 
-def txt2speech_Saas(narrative: str, file_path: str) -> str: 
+def txt2speech_hf(narrative: str, file_path: str) -> str: 
     headers = {"Authorization": f"Bearer {HUGGINGFACE_API_KEY}"}
 
     payload = { "inputs": narrative }
@@ -49,9 +51,38 @@ def txt2speech_Saas(narrative: str, file_path: str) -> str:
     return file_path
 
 
+def text2speech_repl(narrative: str, file_path: str) -> str: 
+
+    output = replicate.run(
+        R8_TXT_TO_SPEECH_API_URL,
+        input={
+            "text": narrative
+        }
+    )
+    print("REPLLICATE OUTPUT: ", output)
+    
+    if output and len(output) > 0:
+        # Get 
+        audio_url = output
+        # Download the audio 
+        response = requests.get(audio_url)
+        if response.status_code == 200:
+            with open(file_path, "wb") as f: 
+                f.write(response.content)
+        else:
+            raise Exception("Failed to download and save the image.")
+    else:
+        raise Exception("Failed to generate the image.")
+
+    return file_path
+
+
 def txt2speech(narrative: str, output_folder: str) -> str:
 
     ts = datetime.now().strftime("%Y%m%d%H%M%S")
     file_path = f"{output_folder}/speech-{ts}.wav"
 
-    return txt2speech_tts(narrative, file_path)
+    if USE_GPU == True:
+        return txt2speech_local(narrative, file_path) 
+    else: 
+        return text2speech_repl(narrative, file_path)
