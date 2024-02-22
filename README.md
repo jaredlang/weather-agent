@@ -25,7 +25,10 @@
     * stabilityai/stable-diffusion-2-1 model generates a city-view image. 
     * stabilityai/stabilityai/sdxl-turbo model generates a city-view image. 
     * Next steps: use a specific model to generate a weather image or icon 
-    * Use a different model to create an image based on the prompt and a sample image 
+    * Fine tune stable diffusio SDXL to create a better weather image. [Blog](https://replicate.com/blog/fine-tune-sdxl) 
+    * 2024/02/22: Decided to change an approach: 
+        - Use stock images on [istock](https://www.istockphoto.com/photos/weather-forecast-app) for weather icons because I need only a small number of pre-designed images. Those don't require creativity. 
+        - Use stable diffusion to create a city-view image as a background. 
 
 6. Add the review steps to review/critic the generated content (In Progress)
     * Allow human to review the output of each step 
@@ -39,7 +42,11 @@
     * To be tested on a hosted environment (Huggingface, Azure OpenAI or AWS Sagemaker)
     * [replicate.com](https://replicate.com) offers a performant run on some largest models (image run returns withn 20s and costs less than $0.01/hr per run)
     * can't run [coqui-xtts-v2](https://huggingface.co/coqui/XTTS-v2) on Huggingface because the inference API is not enabled. 
-    * To host the coqui-xtts-v2 model on [replicate.com](https://replicate.com)
+    * host the coqui-xtts-v2 model on [replicate.com](https://replicate.com) with [COG](https://replicate.com/docs/guides/push-a-model) 
+    * To build a model as COG requires GPU. To my surprise, paperspace instances don't a NVIDIA GPU attached. So I switched to [LambdaLabs](https://lambdalabs.com/) (NVIDIA A10 GPU instance costs $0.75/s). 
+    * 2024/02/22 Findings on Performance vs. Cost: 
+        - the hosted model is still not responsive enough for web apps: 1) cold start takes 2-3 minutes 2) the total run takes 5 minutes due to booting/queuing. 
+        - Hosting it on LabmdaLabs NVIDIA A10 GPU instance is a better option, but $24/day regardless of the traffic is too costly. 
 
 8. Store the generated data for the future reference (To Do)
     * Store text/audio/image into blob storage 
