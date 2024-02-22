@@ -43,8 +43,8 @@
     * [replicate.com](https://replicate.com) offers a performant run on some largest models (image run returns withn 20s and costs less than $0.01/hr per run)
     * can't run [coqui-xtts-v2](https://huggingface.co/coqui/XTTS-v2) on Huggingface because the inference API is not enabled. 
     * host the coqui-xtts-v2 model on [replicate.com](https://replicate.com) with [COG](https://replicate.com/docs/guides/push-a-model) 
-    * To build a model as COG requires GPU. To my surprise, paperspace instances don't a NVIDIA GPU attached. So I switched to [LambdaLabs](https://lambdalabs.com/) (NVIDIA A10 GPU instance costs $0.75/s). 
-    * 2024/02/22 Findings on Performance vs. Cost: 
+    * To build a model as COG requires Linux and GPU. To my surprise, paperspace instances don't a NVIDIA GPU attached. So I switched to [LambdaLabs](https://lambdalabs.com/) (NVIDIA A10 GPU instance costs $0.75/s). 
+    * 2024/02/22: Findings on Performance vs. Cost: 
         - the hosted model is still not responsive enough for web apps: 1) cold start takes 2-3 minutes 2) the total run takes 5 minutes due to booting/queuing. 
         - Hosting it on LabmdaLabs NVIDIA A10 GPU instance is a better option, but $24/day regardless of the traffic is too costly. 
 
