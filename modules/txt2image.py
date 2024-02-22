@@ -26,8 +26,10 @@ R8_TXT_TO_IMAGE_API_URL = "stability-ai/sdxl:c221b2b8ef527988fb59bf24a8b97c4561f
 def generate_image_local(image_description: str): 
     pipeline = DiffusionPipeline.from_pretrained(HF_TXT_TO_IMAGE_MODEL)
     result = pipeline(image_description, num_inference_steps=50)
-
+ 
     image = result.images[0]
+
+    pipeline = None
 
     return image
 

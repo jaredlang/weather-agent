@@ -33,6 +33,8 @@ def txt2speech_local(narrative: str, file_path: str) -> str:
                     speaker_wav=COQUI_VOICE_SAMPLE,
                     language="en")
 
+    tts = None 
+    
     return file_path
 
 
