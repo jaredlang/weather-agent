@@ -83,9 +83,11 @@ def text2image(image_description: str, output_folder: str) -> str:
     image_file_path = f"{output_folder}/image-{ts}.{image_format}"
 
     image = None
-    if USE_GPU: 
+    if USE_GPU == "1": 
+        print("generating image locally...")
         image = generate_image_local(image_description)
     else:
+        print("generating image on Saas...")
         image = generate_image_repl(image_description)
     
     if image == None: 

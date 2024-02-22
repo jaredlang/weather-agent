@@ -82,7 +82,9 @@ def txt2speech(narrative: str, output_folder: str) -> str:
     ts = datetime.now().strftime("%Y%m%d%H%M%S")
     file_path = f"{output_folder}/speech-{ts}.wav"
 
-    if USE_GPU == True:
+    if USE_GPU == "1":
+        print("generating audio locally...")
         return txt2speech_local(narrative, file_path) 
     else: 
+        print("generating audio on SaaS...")
         return text2speech_repl(narrative, file_path)
