@@ -1,9 +1,12 @@
+from dotenv import load_dotenv
 import math
 import json
 import requests 
 from os import environ
 
 from langchain.agents import tool 
+
+load_dotenv()
 
 OPENWEATHER_API_KEY = environ["OPENWEATHER_API_KEY"]
 
