@@ -159,7 +159,7 @@ def create_report(place):
     print(return_dict)
 
     return {
-        "summary": summary, 
+        "summary": summary["output"], 
         "detail": description, 
         "audio": return_dict["audio"], 
         "image": return_dict["image"], 
@@ -209,6 +209,6 @@ def app():
 if __name__ == "__main__": 
     # Atlanta, Orlando, Houston, New York, Calgary, Stockholm, Seattle
     # ABC, XYZ - negative testing
-    create_report("Atlanta")
+    # create_report("Atlanta")
     # test_image_repl()
-    # app()
+    app()
