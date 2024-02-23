@@ -54,6 +54,7 @@
     * Allow human to review the output of each step 
     * Use AutoGen and assistants (graphic designer and critic)
     * Run stability-ai/sdxl for image creation and yorickvp/llava for image review on [replicate.com](https://replicate.com)
+    * Tried to use [Ollama with local LLMs](https://github.com/jaredlang/watanabe-company), but LLM didn't call the custom functions to create or review images. They just talked. 
 
 7. Improve the performance (DONE)
     * On local CPU TTS takes 2-4 minutes and stable-diffusion takes 20-40 minutes. 
