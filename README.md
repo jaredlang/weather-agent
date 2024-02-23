@@ -21,7 +21,7 @@
 
 4. Need to get other weather data besides the temperature. (DONE)
 
-5. There is no image to show the weather data (In Progress)
+5. There is no image to show the weather data (DONE)
     * stabilityai/stable-diffusion-2-1 model generates a city-view image. 
     * stabilityai/stabilityai/sdxl-turbo model generates a city-view image. 
     * Next steps: use a specific model to generate a weather image or icon 
@@ -30,23 +30,23 @@
         - Use stock images on [istock](https://www.istockphoto.com/photos/weather-forecast-app) for weather icons because I need only a small number of pre-designed images. Those don't require creativity. 
         - Use stable diffusion to create a city-view image as a background. 
 
-6. Add the review steps to review/critic the generated content (In Progress)
+6. Add the review steps to review/critic the generated content (DONE)
     * Allow human to review the output of each step 
     * Use AutoGen and assistants (graphic designer and critic)
     * Run stability-ai/sdxl for image creation and yorickvp/llava for image review on [replicate.com](https://replicate.com)
 
-7. Improve the performance (In Progress)
+7. Improve the performance (DONE)
     * On local CPU TTS takes 2-4 minutes and stable-diffusion takes 20-40 minutes. 
     * On P4000 or RTX6000, it takes half of that time. The cost is about $0.5/hr on [Paperspace](https://paperspace.com) bare metal VM. 
     * Implemented multi-processing for text2speech and text2image
     * To be tested on a hosted environment (Huggingface, Azure OpenAI or AWS Sagemaker)
     * [replicate.com](https://replicate.com) offers a performant run on some largest models (image run returns withn 20s and costs less than $0.01/hr per run)
     * can't run [coqui-xtts-v2](https://huggingface.co/coqui/XTTS-v2) on Huggingface because the inference API is not enabled. 
-    * host the coqui-xtts-v2 model on [replicate.com](https://replicate.com) with [COG](https://replicate.com/docs/guides/push-a-model) 
-    * To build a model as COG requires Linux and GPU. To my surprise, paperspace instances don't a NVIDIA GPU attached. So I switched to [LambdaLabs](https://lambdalabs.com/) (NVIDIA A10 GPU instance costs $0.75/s). 
+    * host the [coqui-xtts-v2 model](https://replicate.com/jaredlang/coqui-xtts-v2) on replicate.com with [COG](https://replicate.com/docs/guides/push-a-model) 
+    * To build a model as COG requires Linux and GPU. To my surprise, paperspace instances don't a NVIDIA GPU attached. So I switched to [LambdaLabs](https://lambdalabs.com/). 
     * 2024/02/22: Findings on Performance vs. Cost: 
-        - the hosted model is still not responsive enough for web apps: 1) [cold start](https://replicate.com/docs/how-does-replicate-work#cold-boots) takes 2-3 minutes 2) the total run takes 5 minutes due to booting/queuing. 
-        - Hosting it on LabmdaLabs NVIDIA A10 GPU instance is a better option, but $24/day regardless of the traffic is too costly. 
+        - the hosted model is still not responsive enough for web apps: 1) [cold start](https://replicate.com/docs/how-does-replicate-work#cold-boots) takes 2-3 minutes 2) the total run takes 5 minutes due to booting/queuing. 3) If multi agents are working on image creation, it takes longer. 
+        - Hosting it on [LabmdaLabs](https://lambdalabs.com/). NVIDIA A10 GPU instance ($0.75/s, $24/day) is an option if the traffic is high. 
 
 8. Store the generated data for the future reference (To Do)
     * Store text/audio/image into blob storage 

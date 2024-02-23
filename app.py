@@ -17,6 +17,7 @@ import time
 from modules.tools import get_weather_summary, get_weather_detail
 from modules.txt2speech import txt2speech
 from modules.txt2image import text2image
+from modules.autogen_agent import autogen_image_gen
 
 import multiprocessing
 
@@ -28,6 +29,7 @@ load_dotenv()
 OPENAI_MODEL = os.environ["OPENAI_MODEL"]
 
 REPLICATE_API_TOKEN = os.environ["REPLICATE_API_TOKEN"]
+AUTOGEN_ENABLED = os.environ["AUTOGEN_ENABLED"]
 
 OUTPUT_FOLDER = os.environ["OUTPUT_FOLDER"]
 
@@ -83,7 +85,13 @@ def txt2image_subproc(text: str, output_folder: str, return_dict=None) -> str:
     image_file_path = text2image(text, output_folder)
     if return_dict is not None: 
         return_dict["image"] = image_file_path
-    
+
+
+def txt2image_team_subproc(text: str, output_folder: str, return_dict=None) -> str: 
+    image_file_path = autogen_image_gen(text, output_folder)
+    if return_dict is not None: 
+        return_dict["image"] = image_file_path
+
 
 def create_report(place):
 
@@ -146,7 +154,19 @@ def create_report(place):
     # image_file_path = text2image(summary["output"])
     # print("IMAGE: ", image_file_path)    
 
-    processes = [ttsph_process, ttimg_process]
+    # create an image with multi-agent
+    ttimg_team_process = multiprocessing.Process(
+        target=txt2image_team_subproc, 
+        args=(summary["output"], output_folder, return_dict)
+    )
+    # image_file_path = text2image(summary["output"])
+    # print("IMAGE: ", image_file_path)    
+
+    processes = [ttsph_process]
+    if AUTOGEN_ENABLED == "1": 
+        processes.append(ttimg_team_process)
+    else:
+        processes.append(ttimg_process)
 
     for proc in processes: 
         proc.start()
@@ -162,37 +182,6 @@ def create_report(place):
         "audio": return_dict["audio"], 
         "image": return_dict["image"], 
     }
-
-
-def autogen_image_gen(): 
-    from modules.autogen_agent import user_proxy, manager
-
-    # # Start the conversation
-    chat_result = user_proxy.initiate_chat(
-        manager, message="Houston city scenary at 6:30pm, Sunny sky with few clouds, strong wind, nobody walks")
-    
-    print("CHAT_RESULT: ", chat_result)
-
-    # get the last generated image, which is the best image 
-    last_image_file_path = None
-    for history in chat_result.chat_history:
-        history_keys = history.keys() 
-        if "content" in history_keys and "name" in history_keys and "role" in history_keys: 
-            if history["name"] == "create_image" and history["role"] == "function":
-                last_image_file_path = history["content"]
-        # if "name" in history_keys and "role" in history_keys and "function_call" in history_keys: 
-        #     if history["name"] in ["graphic_designer", ""] and history["role"] == "assistant":
-        #         func_call = history["function_call"]
-        #         if "arguments" in func_call.keys():
-        #             func_call_arguments = func_call["arguments"]
-        #             if isinstance(func_call_arguments, str): 
-        #                 func_call_arguments = json.loads(func_call["arguments"])
-        #                 if "image_file_path" in func_call_arguments.keys(): 
-        #                     last_image_file_path = func_call_arguments["image_file_path"]
-
-    print("Best Image: ", last_image_file_path)
-
-    return last_image_file_path
 
 
 def app(): 
@@ -232,6 +221,9 @@ def app():
 if __name__ == "__main__": 
     # Atlanta, Orlando, Houston, New York, Calgary, Stockholm, Seattle
     # ABC, XYZ - negative testing
-    # create_report("Atlanta")
-    autogen_image_gen()
+    create_report("Houston")
+    # autogen_image_gen(
+    #     text="A cityscape of Houston at 6:30pm, featuring clear blue skies with a few scattered clouds, strong winds, and an empty street with no pedestrians in sight",
+    #     output_folder="./output/working"
+    # )
     # app()

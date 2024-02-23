@@ -1,6 +1,8 @@
 from dotenv import load_dotenv
 
-from os import environ
+import os
+import shutil 
+from datetime import datetime 
 
 from autogen import AssistantAgent, UserProxyAgent, config_list_from_json
 import autogen
@@ -9,8 +11,8 @@ from modules.txt2image_repl import create_image, review_image
 
 load_dotenv()
 
-OUTPUT_FOLDER = environ["OUTPUT_FOLDER"]
-REPLICATE_API_TOKEN = environ["REPLICATE_API_TOKEN"]
+OUTPUT_FOLDER = os.environ["OUTPUT_FOLDER"]
+REPLICATE_API_TOKEN = os.environ["REPLICATE_API_TOKEN"]
 
 def format_filename_or_dir(s):
     """Take a string and return a valid filename constructed from the string.
@@ -135,9 +137,55 @@ Otherwise, reply CONTINUE, or the reason why the task is not solved yet.""",
 
 # Create groupchat
 groupchat = autogen.GroupChat(
-    agents=[user_proxy, graphic_designer, graphic_critic], messages=[], max_round=50,)
+    agents=[user_proxy, graphic_designer, graphic_critic], messages=[], max_round=10,)
 
 manager = autogen.GroupChatManager(
     groupchat=groupchat,
     llm_config=autogen_llm_config)
 
+
+def autogen_image_gen(text: str, output_folder: str) -> str: 
+    # Start the conversation
+    chat_result = user_proxy.initiate_chat(
+        manager, message="Houston city scenary at 6:30pm, Sunny sky with few clouds, strong wind, nobody walks")
+    
+    print("CHAT_RESULT: ", chat_result)
+
+    # get the last generated image, which is the best image 
+    image_file_path_list = []
+    for history in chat_result.chat_history:
+        history_keys = history.keys() 
+        if "content" in history_keys and "name" in history_keys and "role" in history_keys: 
+            if history["name"] == "create_image" and history["role"] == "function":
+                image_file_path_list.append(history["content"])
+        # if "name" in history_keys and "role" in history_keys and "function_call" in history_keys: 
+        #     if history["name"] in ["graphic_designer", ""] and history["role"] == "assistant":
+        #         func_call = history["function_call"]
+        #         if "arguments" in func_call.keys():
+        #             func_call_arguments = func_call["arguments"]
+        #             if isinstance(func_call_arguments, str): 
+        #                 func_call_arguments = json.loads(func_call["arguments"])
+        #                 if "image_file_path" in func_call_arguments.keys(): 
+        #                     last_image_file_path = func_call_arguments["image_file_path"]
+
+    last_image_file_path = image_file_path_list[-1] if len(image_file_path_list) > 0 else None
+    print("Best Image: ", last_image_file_path)
+
+    if last_image_file_path == None: 
+        return None
+    else:
+        ts = datetime.now().strftime("%Y%m%d%H%M%S")
+        image_format = "png"
+        image_file_path = f"{output_folder}/image-{ts}.{image_format}"
+
+        shutil.copyfile(last_image_file_path, image_file_path)
+
+        # move all image files to the working folder
+        working_folder = os.path.join(output_folder, "scratch_pad")
+        if not os.path.exists(working_folder):
+            os.mkdir(working_folder)
+        
+        for f in image_file_path_list:
+            shutil.move(f, working_folder)
+
+        return image_file_path
