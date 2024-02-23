@@ -47,7 +47,7 @@
         - Use for weather icons because I need only a small number of pre-designed images. Those don't require creativity.
         - Use stable diffusion to create a city-view image as a background. 
     * <strong> Next steps: </strong> 
-        - (AI-way) explore an image with the weather anchor
+        - (AI-way) explore an image with a weather anchor using [Dreambooth](https://github.com/replicate/dreambooth-action)
         - (traditional) add the stocked weather icons from [istock](https://www.istockphoto.com/photos/weather-forecast-app) 
 
 6. Add the review steps to review/critic the generated content (DONE)
