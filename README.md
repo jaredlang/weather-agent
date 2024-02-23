@@ -2,7 +2,24 @@
 
 * Create a weather agent to get the current weather information and make an announcement like those on TV
 
-## New Features and Issues
+## Environment Variables 
+
+* .env for keys and configuration (It would be better to separate them)
+    - OPENWEATHER_API_KEY
+    - HUGGINGFACE_API_KEY
+    - OPENAI_API_KEY
+    - LANGCHAIN_API_KEY
+    - REPLICATE_API_TOKEN
+    - OPENAI_MODEL (gpt-3.5-turbo, gpt-4)
+    - COQUI_VOICE_SAMPLE=./voice_samples/samples_en_sample.wav
+    - COQUI_TOS_AGREED=1
+    - OUTPUT_FOLDER (./output)
+    - USE_GPU (0 or 1)
+    - AUTOGEN_ENABLED (0, 1)
+
+* OAI_CONFIG_LIST for autogen ([sample](https://github.com/microsoft/autogen/blob/main/OAI_CONFIG_LIST_sample))
+
+## Task Log (Features and Findings)
 
 1. Text2Speech model doesn't know how to say "minus" if the temperature is below 0. (SOLVED)
     * Use prompt to have LLM add NAGATIVE in front of the temperature degree. 
