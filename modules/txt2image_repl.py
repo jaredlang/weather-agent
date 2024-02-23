@@ -5,6 +5,25 @@ from os import environ
 
 OUTPUT_FOLDER = environ["OUTPUT_FOLDER"]
 
+
+def format_filename_or_dir(s):
+    """Take a string and return a valid filename constructed from the string.
+Uses a whitelist approach: any characters not present in valid_chars are
+removed. Also spaces are replaced with underscores.
+ 
+Note: this method may produce invalid filenames such as ``, `.` or `..`
+When I use this method I prepend a date string like '2009_01_15_19_46_32_'
+and append a file extension like '.txt', so I avoid the potential of using
+an invalid filename.
+ 
+"""
+    import string 
+    valid_chars = "-_.() %s%s" % (string.ascii_letters, string.digits)
+    filename = ''.join(c for c in s if c in valid_chars)
+    filename = filename.replace(' ','_') # I don't like spaces in filenames.
+    return filename
+
+
 # function to use stability-ai model to generate image
 def create_image(prompt: str) -> str:
     output = replicate.run(
@@ -21,7 +40,7 @@ def create_image(prompt: str) -> str:
 
         # Download the image and save it with a filename based on the prompt and current time
         current_time = datetime.now().strftime("%Y%m%d%H%M%S")
-        shortened_prompt = prompt[:50]        
+        shortened_prompt = format_filename_or_dir(prompt[:50])
         image_file_path = f"{OUTPUT_FOLDER}/{shortened_prompt}_{current_time}.png"
 
         response = requests.get(image_url)

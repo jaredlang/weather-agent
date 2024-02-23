@@ -18,8 +18,6 @@ from modules.tools import get_weather_summary, get_weather_detail
 from modules.txt2speech import txt2speech
 from modules.txt2image import text2image
 
-from modules.autogen_agent import user_proxy, manager
-
 import multiprocessing
 
 import streamlit as st 
@@ -166,10 +164,35 @@ def create_report(place):
     }
 
 
-def test_image_repl(): 
+def autogen_image_gen(): 
+    from modules.autogen_agent import user_proxy, manager
+
     # # Start the conversation
-    user_proxy.initiate_chat(
-        manager, message="Sunny sky with few clouds, low at 37 and high at 73")
+    chat_result = user_proxy.initiate_chat(
+        manager, message="Houston city scenary at 6:30pm, Sunny sky with few clouds, strong wind, nobody walks")
+    
+    print("CHAT_RESULT: ", chat_result)
+
+    # get the last generated image, which is the best image 
+    last_image_file_path = None
+    for history in chat_result.chat_history:
+        history_keys = history.keys() 
+        if "content" in history_keys and "name" in history_keys and "role" in history_keys: 
+            if history["name"] == "create_image" and history["role"] == "function":
+                last_image_file_path = history["content"]
+        # if "name" in history_keys and "role" in history_keys and "function_call" in history_keys: 
+        #     if history["name"] in ["graphic_designer", ""] and history["role"] == "assistant":
+        #         func_call = history["function_call"]
+        #         if "arguments" in func_call.keys():
+        #             func_call_arguments = func_call["arguments"]
+        #             if isinstance(func_call_arguments, str): 
+        #                 func_call_arguments = json.loads(func_call["arguments"])
+        #                 if "image_file_path" in func_call_arguments.keys(): 
+        #                     last_image_file_path = func_call_arguments["image_file_path"]
+
+    print("Best Image: ", last_image_file_path)
+
+    return last_image_file_path
 
 
 def app(): 
@@ -210,5 +233,5 @@ if __name__ == "__main__":
     # Atlanta, Orlando, Houston, New York, Calgary, Stockholm, Seattle
     # ABC, XYZ - negative testing
     # create_report("Atlanta")
-    # test_image_repl()
-    app()
+    autogen_image_gen()
+    # app()

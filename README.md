@@ -45,7 +45,7 @@
     * host the coqui-xtts-v2 model on [replicate.com](https://replicate.com) with [COG](https://replicate.com/docs/guides/push-a-model) 
     * To build a model as COG requires Linux and GPU. To my surprise, paperspace instances don't a NVIDIA GPU attached. So I switched to [LambdaLabs](https://lambdalabs.com/) (NVIDIA A10 GPU instance costs $0.75/s). 
     * 2024/02/22: Findings on Performance vs. Cost: 
-        - the hosted model is still not responsive enough for web apps: 1) cold start takes 2-3 minutes 2) the total run takes 5 minutes due to booting/queuing. 
+        - the hosted model is still not responsive enough for web apps: 1) [cold start](https://replicate.com/docs/how-does-replicate-work#cold-boots) takes 2-3 minutes 2) the total run takes 5 minutes due to booting/queuing. 
         - Hosting it on LabmdaLabs NVIDIA A10 GPU instance is a better option, but $24/day regardless of the traffic is too costly. 
 
 8. Store the generated data for the future reference (To Do)
