@@ -126,6 +126,9 @@ def create_report(place):
     print("DESCRIPTIION for audio: ", description)
     #description_excerpt = "\n\n".join(description.split("\n\n")[:3])
 
+    with open(os.path.join(output_folder, "description.txt"), "w") as file:
+        file.write(description)
+
     # prompt1 = ChatPromptTemplate.from_template(
     #     f"Get a brief summary of weather report for the city {place}."
     # )
@@ -133,6 +136,12 @@ def create_report(place):
 
     summary = agent_executor.invoke({"input": f"Get a weather summary for the city of {place}. It must be less than 15 words. Do NOT repeat any word in the input."})
     print("SUMMARY for image:", summary)
+
+    summary = summary["output"]
+
+    with open(os.path.join(output_folder, "summary.txt"), "w") as file:
+        file.write(summary)
+
 
     # Use multiprocess to start both text2speech and text2image
     # Use a shared variable to communicate
@@ -151,7 +160,7 @@ def create_report(place):
     # text2image doesn't take or require a lengthy description 
     ttimg_process = multiprocessing.Process(
         target=txt2image_subproc, 
-        args=(summary["output"], output_folder, return_dict)
+        args=(summary, output_folder, return_dict)
     )
     # image_file_path = text2image(summary["output"])
     # print("IMAGE: ", image_file_path)    
@@ -159,12 +168,15 @@ def create_report(place):
     # create an image with multi-agent
     ttimg_team_process = multiprocessing.Process(
         target=txt2image_team_subproc, 
-        args=(summary["output"], output_folder, return_dict)
+        args=(summary, output_folder, return_dict)
     )
     # image_file_path = text2image(summary["output"])
     # print("IMAGE: ", image_file_path)    
 
     processes = [ttsph_process]
+    breakpoint() 
+    
+    print("use autogen_image: ", AUTOGEN_ENABLED)
     if AUTOGEN_ENABLED == "1": 
         processes.append(ttimg_team_process)
     else:
@@ -179,7 +191,7 @@ def create_report(place):
     print(return_dict)
 
     return {
-        "summary": summary["output"], 
+        "summary": summary, 
         "detail": description, 
         "audio": return_dict["audio"], 
         "image": return_dict["image"], 
