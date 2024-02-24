@@ -17,7 +17,7 @@ from datetime import datetime
 from modules.tools import get_weather_summary, get_weather_detail
 from modules.txt2speech import txt2speech
 from modules.txt2image import text2image
-from modules.autogen_agent import autogen_image_gen
+from modules.autogen_image import autogen_image_gen
 
 import multiprocessing
 
