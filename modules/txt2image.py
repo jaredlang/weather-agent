@@ -13,7 +13,7 @@ load_dotenv()
 
 HUGGINGFACE_API_KEY = environ["HUGGINGFACE_API_KEY"]
 
-USE_GPU = environ["USE_GPU"]
+IMAGE_USE_GPU = environ["IMAGE_USE_GPU"]
 
 HF_TXT_TO_IMAGE_MODEL = "stabilityai/sdxl-turbo"
 # "stabilityai/stable-diffusion-2-1"
@@ -85,7 +85,7 @@ def text2image(image_description: str, output_folder: str) -> str:
     image_file_path = f"{output_folder}/image-{ts}.{image_format}"
 
     image = None
-    if USE_GPU == "1": 
+    if IMAGE_USE_GPU == "1": 
         print("generating image locally...")
         image = generate_image_local(image_description)
     else:

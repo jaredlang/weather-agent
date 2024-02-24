@@ -12,7 +12,7 @@ HUGGINGFACE_API_KEY = environ["HUGGINGFACE_API_KEY"]
 
 COQUI_VOICE_SAMPLE = environ["COQUI_VOICE_SAMPLE"]
 
-USE_GPU = environ["USE_GPU"]
+AUDIO_USE_GPU = environ["AUDIO_USE_GPU"]
 
 HF_TXT_TO_SPEECH_MODEL = "tts_models/multilingual/multi-dataset/xtts_v2"
 HF_TXT_TO_SPEECH_API_URL = "https://api-inference.huggingface.co/models/espnet/kan-bayashi_ljspeech_vits"
@@ -84,7 +84,7 @@ def txt2speech(narrative: str, output_folder: str) -> str:
     ts = datetime.now().strftime("%Y%m%d%H%M%S")
     file_path = f"{output_folder}/speech-{ts}.wav"
 
-    if USE_GPU == "1":
+    if AUDIO_USE_GPU == "1":
         print("generating audio locally...")
         return txt2speech_local(narrative, file_path) 
     else: 
