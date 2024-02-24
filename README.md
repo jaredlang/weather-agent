@@ -14,7 +14,8 @@
     - COQUI_VOICE_SAMPLE=./voice_samples/samples_en_sample.wav
     - COQUI_TOS_AGREED=1
     - OUTPUT_FOLDER (./output)
-    - USE_GPU (0 or 1)
+    - AUDIO_USE_GPU (0 or 1)
+    - IMAGE_USE_GPU (0 or 1)
     - AUTOGEN_ENABLED (0, 1)
 
 * OAI_CONFIG_LIST for autogen ([sample](https://github.com/microsoft/autogen/blob/main/OAI_CONFIG_LIST_sample))
@@ -89,3 +90,5 @@
 11. Support multi-language (To Do)
     * Inspired by [Example](https://github.com/microsoft/autogen/blob/main/notebook/agentchat_video_transcript_translate_with_whisper.ipynb)
     * use whisper and [ffmpeg](https://www.geeksforgeeks.org/how-to-install-ffmpeg-on-windows/)
+    * CHANGE:
+        - Create a separate [translator service](https://github.com/jaredlang/autogen-video-translator)
