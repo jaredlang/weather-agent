@@ -12,7 +12,7 @@ from langchain.agents import AgentExecutor
 
 import os 
 from dotenv import load_dotenv
-import time
+from datetime import datetime 
 
 from modules.tools import get_weather_summary, get_weather_detail
 from modules.txt2speech import txt2speech
@@ -95,7 +95,9 @@ def txt2image_team_subproc(text: str, output_folder: str, return_dict=None) -> s
 
 def create_report(place):
 
-    output_folder = os.path.join(OUTPUT_FOLDER, place)
+    at_this_hour = datetime.now().strftime("%Y-%m-%d-%H")
+    output_folder = os.path.join(os.path.join(OUTPUT_FOLDER, place, at_this_hour))
+
     if not os.path.exists(output_folder):
         os.mkdir(output_folder)
 
@@ -193,13 +195,13 @@ def app():
     placeholder = st.empty()
 
     if place:
-        start_time = time.time()
+        start_time = datetime.now()
         placeholder.text(f"Checking the weather ...")
 
         report = create_report(place)
 
-        end_time = time.time()
-        agent_response_time = int(end_time - start_time)
+        end_time = datetime.now()
+        agent_response_time = (end_time - start_time).total_seconds()
 
         placeholder.text(f"The current weather is:")
 
