@@ -25,7 +25,7 @@ R8_TXT_TO_SPEECH_API_URL = "jaredlang/coqui-xtts-v2:f9f291e17c701929dea2ae927597
 # txt2speech (The best speech)
 def txt2speech_local(narrative: str, file_path: str) -> str: 
 
-    tts = TTS(HF_TXT_TO_SPEECH_MODEL, gpu=(USE_GPU == "True"))
+    tts = TTS(HF_TXT_TO_SPEECH_MODEL, gpu=(AUDIO_USE_GPU == "True"))
     
     # generate speech by cloning a voice using default settings
     tts.tts_to_file(text=narrative,

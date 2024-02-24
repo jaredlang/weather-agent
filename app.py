@@ -142,7 +142,6 @@ def create_report(place):
     with open(os.path.join(output_folder, "summary.txt"), "w") as file:
         file.write(summary)
 
-
     # Use multiprocess to start both text2speech and text2image
     # Use a shared variable to communicate
     proc_manager = multiprocessing.Manager()
@@ -173,9 +172,7 @@ def create_report(place):
     # image_file_path = text2image(summary["output"])
     # print("IMAGE: ", image_file_path)    
 
-    processes = [ttsph_process]
-    breakpoint() 
-    
+    processes = [ttsph_process]    
     print("use autogen_image: ", AUTOGEN_ENABLED)
     if AUTOGEN_ENABLED == "1": 
         processes.append(ttimg_team_process)

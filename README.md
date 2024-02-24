@@ -85,3 +85,7 @@
     * Introduce the fallback chain or agent
     * Introduce retry 
     * Introduce try / catch / raise
+
+11. Support multi-language (To Do)
+    * Inspired by [Example](https://github.com/microsoft/autogen/blob/main/notebook/agentchat_video_transcript_translate_with_whisper.ipynb)
+    * use whisper and [ffmpeg](https://www.geeksforgeeks.org/how-to-install-ffmpeg-on-windows/)
